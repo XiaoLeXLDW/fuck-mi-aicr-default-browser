@@ -2,6 +2,10 @@
 
 让小米系统交给小米浏览器的网页，改由你选择的浏览器打开。
 
+[GitHub 仓库](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser) ·
+[问题反馈](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/issues) ·
+[自动构建](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/actions/workflows/android.yml)
+
 面向小米 / HyperOS 的实验性 Android 工具。通过 **Shizuku 或 Stellar** 提供的特权服务，
 观察系统对 `com.android.browser` 的网页启动请求，提取 HTTP/HTTPS 网址并转交目标浏览器。
 支持通过 ADB 启动权限服务，无需 Root；本项目与 Xiaomi、Shizuku、Stellar 均无官方隶属关系。

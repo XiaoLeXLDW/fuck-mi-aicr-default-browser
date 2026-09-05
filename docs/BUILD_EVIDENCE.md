@@ -1,6 +1,22 @@
 # 构建与验收证据
 
-## 当前：GitHub 仓库整理验证（2026-09-05）
+## GitHub 首次远端验证（2026-09-05）
+
+源码已推送至 [XiaoLeXLDW/fuck-mi-aicr-default-browser](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser)，
+分支为 `main`。代码提交 `a0947c3ae27ca4c3af752dba4a8bd309b81734a1` 的
+[Android checks 第 2 次运行](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/actions/runs/33948990113)
+已成功完成。
+
+- GitHub Ubuntu 24.04 上的仓库检查、UI 检查、Debug / Release 单测、Lint 和 APK 构建均通过。
+- 远端 Gradle 报告 `BUILD SUCCESSFUL in 1m 48s`。
+- 已上传 `android-checks-2` 构建附件，包含开发 APK、未签名 Release 和检查报告；保留期为 14 天。
+- 首次运行发现 Linux 隐藏文件读取差异，已为仓库检查的 `Get-Item` 添加 `-Force`；第 2 次运行
+  确认修复。Gradle 使用 `basic` 缓存。
+
+这次远端构建仍没有使用正式发行密钥或连接真实手机，不能代替实机兼容验收。
+以下保留本地整理阶段及更早版本的原始记录，其中“尚未推送/远端 CI 未运行”是当时的状态。
+
+## 本地 GitHub 仓库整理验证（2026-09-05）
 
 当前源码仍为 `v0.3.1 / versionCode 8`，UserService 协议 `200`、服务代 `30002`。
 本轮修改构建、脚本、文档和许可归属，未修改接管运行逻辑。
