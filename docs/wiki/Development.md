@@ -1,6 +1,6 @@
 # 开发说明
 
-项目使用 Java 17、Android SDK 35 和 Gradle Wrapper 8.9，应用模块为 `app`，隐藏系统接口只在 `hidden-api-stub` 提供编译桩。当前版本 `0.3.1`、`versionCode 8`，应用 ID 为 `dev.codex.mibrowserredirector`。
+项目使用 Java 17、Android SDK 35 和 Gradle Wrapper 8.9，应用模块为 `app`，隐藏系统接口只在 `hidden-api-stub` 提供编译桩。当前版本 `0.3.2`、`versionCode 9`，应用 ID 为 `dev.codex.mibrowserredirector`。
 
 ## 获取与构建
 
@@ -20,7 +20,7 @@ $env:GRADLE_USER_HOME = Join-Path (Get-Location) '.gradle-user-home'
 .\gradlew.bat :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease
 ```
 
-Release 默认未签名；安装测试推荐构建 Debug，新克隆会生成项目内 `.local/debug.keystore`。`-LocalTestSigning` 只供持有原 `keys/redirector-test.jks` 的维护者显式复用历史测试证书；公开分发需配置自己的发布签名。不要把本地测试证书当成公开发布证书，也不要假定新证书能覆盖既有安装。
+Release 默认未签名；安装测试推荐构建 Debug，新克隆会生成项目内 `.local/debug.keystore`。`-LocalTestSigning` 只供持有原 `keys/redirector-test.jks` 的维护者显式复用历史测试证书。当前 Pre-release 沿用该证书以保持升级连续性，它仍是测试签名；未来采用正式发布证书时需另行处理升级关系，不能假定新证书能覆盖既有安装。
 
 ## 阅读顺序
 

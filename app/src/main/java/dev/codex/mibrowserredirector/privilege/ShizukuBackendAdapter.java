@@ -17,6 +17,7 @@ import rikka.shizuku.Shizuku;
 final class ShizukuBackendAdapter implements PrivilegeRuntime.BackendAdapter {
     private final Handler callbackHandler;
     private final Shizuku.UserServiceArgs serviceArgs;
+    private final ShizukuTagOwnership tagOwnership;
     private Listener listener;
     private boolean observing;
 
@@ -39,6 +40,8 @@ final class ShizukuBackendAdapter implements PrivilegeRuntime.BackendAdapter {
     ShizukuBackendAdapter(Context context, Handler callbackHandler, Class<?> serviceClass,
             String processSuffix, String tag, int generation) {
         this.callbackHandler = callbackHandler;
+        // Match ShizukuServiceConnections.get(): explicit tag, otherwise class name; NOT version.
+        this.tagOwnership = ShizukuTagOwnership.forTag(tag != null ? tag : serviceClass.getName());
         this.serviceArgs = new Shizuku.UserServiceArgs(
                 new ComponentName(context, serviceClass))
                 .processNameSuffix(processSuffix)
@@ -98,12 +101,15 @@ final class ShizukuBackendAdapter implements PrivilegeRuntime.BackendAdapter {
     @Override
     public ServiceSession bind(ServiceCallback callback) {
         IBinder managerBinder = Shizuku.getBinder();
-        if (managerBinder == null || !managerBinder.pingBinder()) {
+        if (managerBinder == null) {
             throw new IllegalStateException("Shizuku 服务 Binder 不可用");
         }
         ShizukuSession session = new ShizukuSession(callback, managerBinder);
         try {
-            Shizuku.bindUserService(serviceArgs, session.connection);
+            tagOwnership.bind(session.lease, () -> {
+                session.requireSourceManager();
+                Shizuku.bindUserService(serviceArgs, session.connection);
+            });
         } catch (RuntimeException error) {
             session.current = false;
             callbackHandler.post(() -> callback.onServiceStartFailed(
@@ -141,6 +147,7 @@ final class ShizukuBackendAdapter implements PrivilegeRuntime.BackendAdapter {
         private volatile ServiceCallback callback;
         private volatile boolean current = true;
         private volatile boolean removed;
+        private final ShizukuTagOwnership.Lease lease = tagOwnership.newLease();
         private final IBinder managerBinder;
 
         private final ServiceConnection connection = new ServiceConnection() {
@@ -182,23 +189,24 @@ final class ShizukuBackendAdapter implements PrivilegeRuntime.BackendAdapter {
 
         @Override
         public void remove() {
-            if (Shizuku.getBinder() != managerBinder || !managerBinder.pingBinder()) {
-                throw new IllegalStateException(
-                        "Shizuku 管理器 Binder 已变化，拒绝向非来源管理器移除服务");
-            }
-            Shizuku.unbindUserService(serviceArgs, connection, true);
-            removed = true;
+            tagOwnership.remove(lease, () -> {
+                requireSourceManager();
+                Shizuku.unbindUserService(serviceArgs, connection, true);
+                removed = true;
+            });
         }
 
         @Override
         public void detach() {
+            // Always retire THIS callback, even when a newer lease forbids SDK-wide unbinding.
             callback = NO_OP_CALLBACK;
-            if (removed || Shizuku.getBinder() != managerBinder || !managerBinder.pingBinder()) {
-                return;
-            }
+            current = false;
             try {
-                // Detach this Activity callback without killing the daemon UserService.
-                Shizuku.unbindUserService(serviceArgs, connection, false);
+                tagOwnership.detach(lease, () -> {
+                    if (removed) return;
+                    requireSourceManager();
+                    Shizuku.unbindUserService(serviceArgs, connection, false);
+                });
             } catch (RuntimeException ignored) {
                 // A later Activity can reattach; daemon ownership is preserved.
             }
@@ -206,7 +214,15 @@ final class ShizukuBackendAdapter implements PrivilegeRuntime.BackendAdapter {
 
         @Override
         public boolean isCurrent() {
-            return current && Shizuku.getBinder() == managerBinder;
+            return current && tagOwnership.isCurrent(lease) && Shizuku.getBinder() == managerBinder;
+        }
+
+        private void requireSourceManager() {
+            if (Shizuku.getBinder() != managerBinder || !managerBinder.pingBinder()
+                    || Shizuku.getBinder() != managerBinder) {
+                throw new IllegalStateException(
+                        "Shizuku 管理器 Binder 已变化，拒绝向非来源管理器操作服务");
+            }
         }
     }
 }

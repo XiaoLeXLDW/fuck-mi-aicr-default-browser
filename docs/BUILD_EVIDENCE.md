@@ -1,5 +1,40 @@
 # 构建与验收证据
 
+## v0.3.2 本地修复包（2026-09-05，发布前历史记录）
+
+针对浏览器菜单截图和“检查项目问题”报告修复，详情见 [修复记录](FIX_REVIEW_0.3.2.md)。
+当前工作树为 `versionCode 9 / versionName 0.3.2`，服务协议 `200`、服务代 `30003`。
+以下为修复阶段记录：当时尚未提交、推送、运行远端 CI 或发布 GitHub Release；最终发行附件与验证以[版本说明](releases/v0.3.2.md)及后续发布记录为准。
+
+### 最终本地验证
+
+- `scripts/build.ps1 -Variant Debug -LocalTestSigning` 与 Release 对应命令均构建成功，
+  各用时 58 秒；JDK 17.0.9、项目内 Android SDK 35 / Gradle 缓存。
+- Debug / Release 各 93 项 JUnit 通过，0 failure / error / skipped；两种 Lint 均为
+  0 error / 9 warnings。计数包含浏览器判定 10 项、选择 8 项、停止 18 项、独立通道 2 项、
+  调度 16 项、子进程 21 项、Shizuku tag 租约 1 项，以及其他既有 17 项。
+- 独立快速测试再次通过：浏览器 10 项、通道 2 项、调度/进程 37 项；后者附带的 Android
+  服务编译检查通过。错误输入与故障由模拟对象注入，不代表手机上的所有 ROM 分支。
+- UI 固定 `72dp` 结构检查、128 个仓库候选文件的保护路径/常见凭据/链接/脚本检查通过；
+  `git diff --check` 通过。没有把密钥、工具、缓存、APK 或用户截图纳入候选源码。
+- Release APK 包名/版本、双后端 Manifest、v2 签名与 ZIP 对齐通过；SHA-256 sidecar
+  与 APK 一致，证书指纹与实际读取的已发布 v0.3.1 universal APK 相同。
+
+### 交付包
+
+`dist/MiBrowserRedirector-release-local-test-v0.3.2.apk`，`130924 bytes`。
+
+```text
+APK SHA-256: d5643726b67cf2a85ff9eefb4b3a1374d7c8112cffbc84fcb2367bafc6d94c53
+Certificate SHA-256: 24211beec19c121f4135640e9c95c75c5b981726b3172b7658e169f28894d376
+Signing: existing local test key; not a new production certificate
+```
+
+保留配置的覆盖升级条件已满足（同包名/签名、递增版本号），但本轮未执行手机安装。
+没有 ADB / 模拟器 / 真机行为证据；特别是官方 Shizuku、Stellar 原生授权/跳转/停止、页面
+重建与超时恢复、截图中的真实应用筛选均待 [实机验收](实机验收.md)。MainActivity 的协同
+路径只做了源码复核和 Android 编译，不能把核心单元测试算作完整 UI 测试。
+
 ## Universal APK 首次发布（2026-09-05）
 
 [v0.3.1 Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.1)

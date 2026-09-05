@@ -4,33 +4,30 @@ import android.app.IActivityController;
 import android.content.Intent;
 import android.os.Process;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public final class RedirectorUserService extends IRedirectorService.Stub {
     private static final String XIAOMI_BROWSER = "com.android.browser";
-    private static final long DUPLICATE_WINDOW_MS = 1_500L;
-
-    private final ExecutorService redirectExecutor = new ThreadPoolExecutor(
-            1,
-            1,
-            0L,
-            TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(8),
-            runnable -> {
-                Thread thread = new Thread(runnable, "mi-browser-redirect");
-                thread.setDaemon(true);
-                return thread;
-            },
-            new ThreadPoolExecutor.AbortPolicy()
-    );
+    private final RedirectDispatcher redirectDispatcher = new RedirectDispatcher(
+            new AmProcessLauncher(), new RedirectDispatcher.Listener() {
+                @Override public void configured(RedirectDispatcher.Snapshot config) {
+                    lastEvent = eventPrefix() + (config.enabled
+                            ? "已注册控制器，等待 com.android.browser（"
+                                + (config.observeOnly ? "观察模式" : "接管模式") + "）"
+                            : "已停止接收新跳转，正在清理控制器");
+                }
+                @Override public void accepted(RedirectDispatcher.Snapshot config, String url) {
+                    lastEvent = eventPrefix() + "已拦截，准备交给 " + config.target
+                            + " → " + UrlExtractor.displayHost(url);
+                }
+                @Override public void finished(RedirectDispatcher.Snapshot config, String url,
+                        RedirectDispatcher.Result result) {
+                    onLaunchFinished(config, url, result);
+                }
+            });
 
     private volatile boolean enabled;
     private volatile boolean observeOnly;
@@ -38,8 +35,6 @@ public final class RedirectorUserService extends IRedirectorService.Stub {
     private volatile String lastEvent = ServiceIdentity.BUILD_LABEL + "：尚未捕获启动事件";
     private volatile SystemActivityController systemController;
     private volatile Controller callback;
-    private volatile long lastRedirectAt;
-    private volatile String lastRedirectUrl;
 
     public RedirectorUserService() {
     }
@@ -53,15 +48,18 @@ public final class RedirectorUserService extends IRedirectorService.Stub {
             return "错误：目标不能仍是小米浏览器";
         }
 
+        // Invalidate before set(): the system may synchronously wait on callbacks.
+        // activityStarting never takes this service monitor or waits on dispatch.
+        enabled = false;
+        redirectDispatcher.disable();
         targetPackage = requestedTargetPackage;
         observeOnly = requestedObserveOnly;
         try {
             if (systemController == null) systemController = SystemActivityController.connect();
             if (callback == null) callback = new Controller();
             systemController.set(callback);
+            redirectDispatcher.configure(requestedTargetPackage, requestedObserveOnly);
             enabled = true;
-            lastEvent = eventPrefix() + "已注册控制器，等待 com.android.browser（"
-                    + (observeOnly ? "观察模式" : "接管模式") + "）";
             return (observeOnly ? "观察模式已开启" : "接管模式已开启") + " → "
                     + requestedTargetPackage + "\n服务：" + ServiceIdentity.BUILD_LABEL
                     + "\n接口：" + systemController.implementationName();
@@ -77,6 +75,7 @@ public final class RedirectorUserService extends IRedirectorService.Stub {
     @Override
     public synchronized String disable() {
         enabled = false;
+        redirectDispatcher.disable();
         String result = "已停用";
         if (systemController != null) {
             try {
@@ -130,59 +129,57 @@ public final class RedirectorUserService extends IRedirectorService.Stub {
     @Override
     public void destroy() {
         disable();
-        redirectExecutor.shutdownNow();
+        redirectDispatcher.close();
+        try { redirectDispatcher.awaitTermination(500, TimeUnit.MILLISECONDS); }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         System.exit(0);
     }
 
     private final class Controller extends IActivityController.Stub {
         @Override
         public boolean activityStarting(Intent intent, String targetPackageName) {
+            RedirectDispatcher.Snapshot config = redirectDispatcher.snapshot();
             try {
-                if (!enabled || !XIAOMI_BROWSER.equals(targetPackageName)) return true;
-                String selected = targetPackage;
+                if (!config.enabled || !XIAOMI_BROWSER.equals(targetPackageName)) return true;
+                String selected = config.target;
                 if (!isSafePackageName(selected)) return true;
 
                 if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) {
-                    lastEvent = eventPrefix() + "捕获到小米浏览器，但 action 不是 VIEW；已放行";
+                    recordCallbackEvent(config, "捕获到小米浏览器，但 action 不是 VIEW；已放行");
                     return true;
                 }
 
                 String dataString = intent.getDataString();
                 if (dataString == null) {
-                    lastEvent = eventPrefix() + "捕获到小米浏览器，但 data 为空；已放行";
+                    recordCallbackEvent(config, "捕获到小米浏览器，但 data 为空；已放行");
                     return true;
                 }
 
                 String url = UrlExtractor.extract(dataString);
                 if (url == null) {
-                    lastEvent = eventPrefix() + "捕获到小米浏览器，但 data 不是可用的 HTTP/HTTPS 网址；已放行";
+                    recordCallbackEvent(config, "捕获到小米浏览器，但 data 不是可用的 HTTP/HTTPS 网址；已放行");
                     return true;
                 }
 
-                if (observeOnly) {
-                    lastEvent = eventPrefix() + "观察到可接管网址 → " + UrlExtractor.displayHost(url)
-                            + "；本次仍放行小米浏览器";
+                if (config.observeOnly) {
+                    recordCallbackEvent(config, "观察到可接管网址 → " + UrlExtractor.displayHost(url)
+                            + "；本次仍放行小米浏览器");
                     return true;
                 }
 
-                long now = System.currentTimeMillis();
-                if (url.equals(lastRedirectUrl) && now - lastRedirectAt < DUPLICATE_WINDOW_MS) {
-                    lastEvent = eventPrefix() + "忽略重复跳转 → " + UrlExtractor.displayHost(url);
+                RedirectDispatcher.Submission submission = redirectDispatcher.trySubmit(config, url);
+                if (submission == RedirectDispatcher.Submission.DUPLICATE) {
+                    // Preserve the meaningful accepted/completed diagnostic.
                     return false;
                 }
 
-                try {
-                    redirectExecutor.execute(() -> launch(selected, url));
-                } catch (RejectedExecutionException e) {
-                    lastEvent = eventPrefix() + "重定向队列不可用；已放行小米浏览器";
+                if (submission == RedirectDispatcher.Submission.REJECTED) {
+                    recordCallbackEvent(config, "重定向队列不可用；已放行小米浏览器");
                     return true;
                 }
-                lastRedirectAt = now;
-                lastRedirectUrl = url;
-                lastEvent = eventPrefix() + "已拦截，准备交给 " + selected + " → " + UrlExtractor.displayHost(url);
                 return false;
             } catch (Throwable e) {
-                lastEvent = eventPrefix() + "回调异常，已放行：" + compactError(e);
+                recordCallbackEvent(config, "回调异常，已放行：" + e.getClass().getSimpleName());
                 return true;
             }
         }
@@ -214,33 +211,24 @@ public final class RedirectorUserService extends IRedirectorService.Stub {
         }
     }
 
-    private void launch(String packageName, String url) {
-        ProcessBuilder builder = new ProcessBuilder(
-                "/system/bin/am", "start",
-                "--user", "current",
-                "-a", Intent.ACTION_VIEW,
-                "-c", Intent.CATEGORY_BROWSABLE,
-                "-f", "0x10000000",
-                "-d", url,
-                "-p", packageName
-        );
-        builder.redirectErrorStream(true);
-        try {
-            java.lang.Process process = builder.start();
-            boolean finished = process.waitFor(10, TimeUnit.SECONDS);
-            if (!finished) {
-                process.destroy();
-                lastEvent = eventPrefix() + "启动 " + packageName + " 超时 → " + UrlExtractor.displayHost(url);
-            } else if (process.exitValue() != 0) {
-                lastEvent = eventPrefix() + "am start 失败 (exit=" + process.exitValue() + ") → " + packageName;
-            } else {
-                lastEvent = eventPrefix() + "已打开 " + packageName + " → " + UrlExtractor.displayHost(url);
-            }
-        } catch (IOException e) {
-            lastEvent = eventPrefix() + "无法执行 am start：" + compactError(e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            lastEvent = eventPrefix() + "启动任务被中断";
+    private void recordCallbackEvent(RedirectDispatcher.Snapshot config, String message) {
+        redirectDispatcher.tryRecord(config, () -> lastEvent = eventPrefix() + message);
+    }
+
+    private void onLaunchFinished(RedirectDispatcher.Snapshot config, String url,
+            RedirectDispatcher.Result result) {
+        switch (result) {
+            case SUCCEEDED:
+                lastEvent = eventPrefix() + "已打开 " + config.target + " → " + UrlExtractor.displayHost(url);
+                break;
+            case TIMED_OUT:
+                lastEvent = eventPrefix() + "启动 " + config.target + " 超时；可立即重试";
+                break;
+            case CANCELLED:
+                lastEvent = eventPrefix() + "启动任务已取消";
+                break;
+            default:
+                lastEvent = eventPrefix() + "am start 未确认成功 → " + config.target + "；可立即重试";
         }
     }
 

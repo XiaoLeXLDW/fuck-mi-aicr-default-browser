@@ -3,7 +3,7 @@
 让小米系统交给小米浏览器的网页，改由你选择的浏览器打开。
 
 [GitHub 仓库](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser) ·
-[下载 APK](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.1) ·
+[下载 APK](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.2) ·
 [问题反馈](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/issues) ·
 [自动构建](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/actions/workflows/android.yml)
 
@@ -11,7 +11,8 @@
 观察系统对 `com.android.browser` 的网页启动请求，提取 HTTP/HTTPS 网址并转交目标浏览器。
 支持通过 ADB 启动权限服务，无需 Root；本项目与 Xiaomi、Shizuku、Stellar 均无官方隶属关系。
 
-**当前版本：v0.3.1 · 实验阶段。** 双后端已实现并有静态测试；当前版的真机兼容和浏览器菜单
+**当前版本：v0.3.2 · 实验阶段。** v0.3.2 修复浏览器筛选与
+停服/跳转异常路径，说明见 [修复记录](docs/FIX_REVIEW_0.3.2.md)。双后端已实现并有静态测试；当前版的真机兼容和浏览器菜单
 视觉体验仍待验收。源码中的 `minSdk 26` 表示最低可安装 Android 8.0，不代表所有 ROM 都能接管。
 
 [快速开始](docs/wiki/Getting-Started.md) · [Wiki](docs/wiki/Home.md) ·
@@ -21,12 +22,13 @@
 
 - **观察或接管**：先观察可提取的网址，再决定是否启用实际跳转。
 - **选择目标浏览器**：图标、名称和包名单选菜单；选择草稿在点“开启接管”后才应用。
+  v0.3.2 要求同时具有通用 HTTP 与 HTTPS 处理能力，排除受域名、路径或文件类型限制的网页入口。
 - **两条权限后端**：官方 Shizuku API 与 Stellar 原生 API；自动模式优先 Stellar。
 - **明确退出**：点“停用并退出服务”，清理控制器并等待 UserService Binder 死亡。
 
 ## 使用步骤
 
-1. 从 [v0.3.1 Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.1) 下载 universal APK 安装，并安装一个可处理 HTTPS 的目标浏览器。
+1. 从 [v0.3.2 Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.2) 下载 universal APK 安装，并安装一个可通用处理 HTTP 与 HTTPS 的目标浏览器。
 2. 在 Shizuku Manager 或 Stellar 中启动服务，打开“岛外打开”选择后端并授权。
 3. 选择目标浏览器，保持“观察模式”，点“开启接管”并触发原来会打开小米浏览器的入口。
 4. 确认“最近事件”能观察到目标网址后，关闭观察模式，再点“开启接管”使修改生效。
@@ -57,6 +59,8 @@
 - 接管任务入队后即阻止原启动。随后目标浏览器启动失败或超时，**不会自动回退小米浏览器**。
 - 使用系统全局 `IActivityController`，可能受 ROM 限制或被其他工具覆盖；避免同时使用
   `am monitor`、Monkey 或其他控制器。顶部固定 `72dp` 安全距仍需实机视觉确认。
+- 目标启动仍使用 `--user current`，没有取得原请求的用户身份；暂不承诺工作资料、系统分身或
+  跨用户兼容。无法查询全局 Controller 是否已被其他工具替换，因此不要并用同类工具。
 - 最近事件通常展示域名；完整网址仍会短暂进入内存和 `am start` 参数，系统或浏览器可能记录它。
   本项目未实现遥测或上传服务，详见[隐私说明](docs/PRIVACY.md)。
 

@@ -27,13 +27,13 @@ flowchart TD
 | `UrlExtractor`、`SystemActivityController` | 有边界的网址解析；反射连接 ActivityManager / ActivityTaskManager 控制器接口 |
 | `UserServiceStopper` 与 Binder helper | disable、后端 stop/remove、destroy 补救、Binder 死亡确认 |
 
-业务服务与主 Activity 分处进程。Stellar 后缀是 `redirector`，Shizuku 是 `redirector_shizuku`；v0.3.1 共用协议 `200` 与服务代 `30002`。页面退出只解除本页连接，daemon 可继续运行。
+业务服务与主 Activity 分处进程。Stellar 后缀是 `redirector`，Shizuku 是 `redirector_shizuku`；v0.3.2 共用协议 `200` 与服务代 `30003`。页面退出清理本页连接引用，daemon 可继续运行。Shizuku SDK 按整个 tag 解绑；旧页面仅注销自身回调，适配器确认 tag 归属安全时才调用 SDK 解绑，以免破坏新页面会话。
 
 ## 一次接管
 
 1. Controller 回调只继续处理 `com.android.browser` 的 `ACTION_VIEW`。
 2. 从 `Intent.data` 提取 HTTP/HTTPS；无法解析或处于观察模式时放行。
-3. 接管模式以 1.5 秒窗口抑制连续相同网址，把启动任务交给单线程执行器，其等待队列容量为 8。
+3. 接管模式按配置代、目标与网址去重：任务等待或运行时抑制重复，成功后保留 1.5 秒窗口，失败允许立即重试。启动使用单线程执行器，等待队列容量为 8；停用或配置变更使旧待执行任务失效。
 4. 入队失败则放行；入队成功立即拒绝原启动，执行器使用独立参数调用 `/system/bin/am start` 转交网址。
 5. 目标启动命令最多等待 10 秒。失败或超时只更新状态，当前没有自动恢复原小米启动的路径。
 

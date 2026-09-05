@@ -24,11 +24,11 @@
 脚本不安装 JDK。若 PowerShell 阻止脚本执行，可在当前终端使用
 `Set-ExecutionPolicy -Scope Process Bypass`，无需更改全局策略。
 
-输出 `dist/MiBrowserRedirector-debug-debug-signed-v0.3.1.apk` 和同名 `.sha256`。
+当前工作树输出 `dist/MiBrowserRedirector-debug-debug-signed-v0.3.2.apk` 和同名 `.sha256`。
 新克隆会生成项目内 `.local/debug.keystore`，不同克隆的开发证书可能不同。
 
 ```powershell
-.\scripts\install.ps1 -Apk .\dist\MiBrowserRedirector-debug-debug-signed-v0.3.1.apk
+.\scripts\install.ps1 -Apk .\dist\MiBrowserRedirector-debug-debug-signed-v0.3.2.apk
 ```
 
 安装会操作 ADB 设备；多个设备时追加 `-Serial`。不能覆盖不同签名的现有安装，脚本不会自动卸载。
@@ -39,7 +39,7 @@
 .\scripts\build.ps1 -Variant Release
 ```
 
-无签名配置时输出 `dist/MiBrowserRedirector-release-unsigned-v0.3.1.apk`。这是可检查的构建产物，
+无签名配置时输出 `dist/MiBrowserRedirector-release-unsigned-v0.3.2.apk`。这是可检查的构建产物，
 **不能直接安装或当作已签名发行包**。构建脚本为两种 Variant 执行单测、Lint、UI 结构检查、
 Manifest/包名/版本检查，并按签名类型验证 APK；不会替代实机验收。
 

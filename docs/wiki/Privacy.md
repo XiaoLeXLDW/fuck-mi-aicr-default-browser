@@ -1,6 +1,6 @@
 # 隐私说明
 
-当前 v0.3.1 源码没有账号、分析 SDK 或上传实现，应用 Manifest 未声明 `INTERNET`。但 UserService 使用管理器提供的 shell/root 身份，目标浏览器会访问网址；不能据此声称整个特权链路无法联网。
+当前 v0.3.2 源码没有账号、分析 SDK 或上传实现，应用 Manifest 未声明 `INTERNET`。但 UserService 使用管理器提供的 shell/root 身份，目标浏览器会访问网址；不能据此声称整个特权链路无法联网。
 
 | 数据 | 当前用途与留存 |
 | --- | --- |
