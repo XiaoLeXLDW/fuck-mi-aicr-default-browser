@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fixed by design: keeps the header below Xiaomi's status bar / island. -->
+    <dimen name="page_top_safe_margin">72dp</dimen>
+    <dimen name="page_horizontal_margin">20dp</dimen>
+    <dimen name="page_bottom_margin">32dp</dimen>
+</resources>

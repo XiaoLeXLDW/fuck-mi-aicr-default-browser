@@ -1,0 +1,30 @@
+name: 问题反馈
+description: 跳转、授权、停服或界面问题
+title: "[Bug] "
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: 版本与环境
+      description: App 版本和签名类型、手机型号、Android/HyperOS 版本、Shizuku/Stellar 版本及启动方式。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤、预期与实际结果
+      description: 写清使用观察还是接管模式、从哪个入口打开；网址请使用 example.com。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏证据
+      description: 可贴当前状态、最近事件、截图，以及停止后是否仍有进程。不要上传真实网址、令牌、序列号或配对码。
+  - type: checkboxes
+    id: redaction
+    attributes:
+      label: 提交检查
+      options:
+        - label: 我已移除日志和截图中的敏感信息，并阅读了兼容说明。
+          required: true

@@ -1,0 +1,113 @@
+plugins {
+    id "com.android.application"
+}
+
+def localTestSigning = providers.gradleProperty("localTestSigning").orElse("false").get().toBoolean()
+def releaseSigningNames = ["REDIRECTOR_KEYSTORE", "REDIRECTOR_STORE_PASSWORD", "REDIRECTOR_KEY_ALIAS", "REDIRECTOR_KEY_PASSWORD"]
+def releaseSigningValues = releaseSigningNames.collectEntries { name -> [(name): System.getenv(name)] }
+def hasReleaseSigning = releaseSigningValues.values().every { it != null && !it.isEmpty() }
+if (!localTestSigning && releaseSigningValues.values().any { it != null && !it.isEmpty() } && !hasReleaseSigning) {
+    throw new GradleException("Set all four REDIRECTOR_* signing variables, or unset all of them for an unsigned release.")
+}
+def testKey = rootProject.file("keys/redirector-test.jks")
+if (localTestSigning && !testKey.isFile()) {
+    throw new GradleException("Local test signing was requested, but keys/redirector-test.jks is missing. Restore the existing key; do not generate a replacement.")
+}
+
+android {
+    namespace "dev.codex.mibrowserredirector"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "dev.codex.mibrowserredirector"
+        minSdk 26
+        targetSdk 35
+        versionCode 8
+        versionName "0.3.1"
+    }
+
+    signingConfigs {
+        debug {
+            storeFile rootProject.file(".local/debug.keystore")
+        }
+        if (localTestSigning) {
+            localTest {
+                storeFile testKey
+                storePassword "android"
+                keyAlias "redirector"
+                keyPassword "android"
+            }
+        }
+        if (!localTestSigning && hasReleaseSigning) {
+            release {
+                storeFile rootProject.file(releaseSigningValues.REDIRECTOR_KEYSTORE)
+                storePassword releaseSigningValues.REDIRECTOR_STORE_PASSWORD
+                keyAlias releaseSigningValues.REDIRECTOR_KEY_ALIAS
+                keyPassword releaseSigningValues.REDIRECTOR_KEY_PASSWORD
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            if (localTestSigning) signingConfig signingConfigs.localTest
+        }
+        release {
+            minifyEnabled false
+            if (localTestSigning) {
+                signingConfig signingConfigs.localTest
+            } else if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+
+    buildFeatures {
+        aidl true
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+dependencies {
+    implementation "dev.rikka.shizuku:api:13.1.5"
+    implementation "dev.rikka.shizuku:provider:13.1.5"
+
+    compileOnly project(":hidden-api-stub")
+    compileOnly "androidx.annotation:annotation:1.3.0"
+
+    testImplementation "junit:junit:4.13.2"
+}
+
+// AGP only auto-creates its default user-home debug key. Keep this disposable
+// development key inside the checkout while supporting direct Wrapper builds.
+if (!localTestSigning) {
+    def debugKey = rootProject.file(".local/debug.keystore")
+    def ensureDebugKeystore = tasks.register("ensureDebugKeystore") {
+        outputs.file(debugKey)
+        onlyIf { !debugKey.isFile() }
+        doLast {
+            debugKey.parentFile.mkdirs()
+            def executable = System.getProperty("os.name").toLowerCase().contains("windows") ? "keytool.exe" : "keytool"
+            exec {
+                commandLine new File(System.getProperty("java.home"), "bin/" + executable).absolutePath,
+                    "-genkeypair", "-keystore", debugKey.absolutePath, "-storetype", "JKS",
+                    "-storepass", "android", "-keypass", "android", "-alias", "androiddebugkey",
+                    "-keyalg", "RSA", "-keysize", "2048", "-validity", "10000",
+                    "-dname", "CN=Android Debug,O=Android,C=US", "-noprompt"
+            }
+        }
+    }
+    tasks.configureEach {
+        if (name == "validateSigningDebug") dependsOn(ensureDebugKeystore)
+    }
+}

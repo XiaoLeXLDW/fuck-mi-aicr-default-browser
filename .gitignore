@@ -1,0 +1,36 @@
+# Local tools, caches and editor state
+.gradle/
+.gradle-user-home/
+.tools/
+.local/
+.ci/
+.idea/
+.vscode/
+.codex-remote-attachments/
+local.properties
+**/build/
+
+# Signing credentials and local configuration
+keys/
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+signing.properties
+.env
+.env.*
+!.env.example
+
+# Generated artifacts and private device evidence
+dist/
+*.apk
+*.aab
+*.apk.sha256
+*.log
+*.hprof
+*.iml
+.DS_Store
+Thumbs.db

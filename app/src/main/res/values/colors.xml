@@ -1,0 +1,14 @@
+<resources>
+    <color name="bg">#FFF9F5</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="surface_subtle">#FFFAF7</color>
+    <color name="ink">#201B17</color>
+    <color name="muted">#71675F</color>
+    <color name="accent">#D84B2A</color>
+    <color name="accent_dark">#A72D14</color>
+    <color name="accent_pressed">#BC3A1F</color>
+    <color name="accent_soft">#FFF0E9</color>
+    <color name="accent_disabled">#E8A894</color>
+    <color name="line">#E9DDD5</color>
+    <color name="line_strong">#DDC9BD</color>
+</resources>

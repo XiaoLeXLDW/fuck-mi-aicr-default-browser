@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">岛外打开</string>
+    <string name="service_badge">SHIZUKU 服务</string>
+    <string name="title">小米浏览器重定向</string>
+    <string name="subtitle">通过权限服务拦住小米写死的浏览器，把网页交给你选定的浏览器</string>
+    <string name="backend_label">权限后端</string>
+    <string name="backend_dropdown">展开权限后端列表</string>
+    <string name="browser_label">目标浏览器</string>
+    <string name="browser_picker_title">选择浏览器</string>
+    <string name="browser_picker_subtitle">找到 %1$d 个可用浏览器\n选好后，点“开启接管”生效</string>
+    <string name="browser_apply_hint">更换后，点“开启接管”生效</string>
+    <string name="browser_system_default">系统默认 · %1$s</string>
+    <string name="browser_field_description">目标浏览器：%1$s，%2$s。点按更换浏览器</string>
+    <string name="browser_empty">未发现可用浏览器</string>
+    <string name="browser_empty_hint">安装浏览器后，点“刷新状态”</string>
+    <string name="browser_missing">原浏览器不可用</string>
+    <string name="browser_missing_hint">点按重新选择目标浏览器</string>
+    <string name="browser_cancel">取消</string>
+    <string name="observe_only">观察模式</string>
+    <string name="observe_hint">只记录网址，仍由小米浏览器打开</string>
+    <string name="enable">开启接管</string>
+    <string name="disable">停用并退出服务</string>
+    <string name="refresh">刷新状态</string>
+    <string name="status_title">当前状态</string>
+    <string name="event_title">最近事件</string>
+    <string name="notice_title">使用提示</string>
+    <string name="warning">首次使用请保持“观察模式”，先确认能捕获网址，再关闭观察模式正式接管。切换权限后端前必须先停用；这是全局 Activity Controller，同一时间不要运行 am monitor、Monkey 或其他 Activity Controller 工具。</string>
+</resources>
