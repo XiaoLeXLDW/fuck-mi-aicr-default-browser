@@ -2,7 +2,7 @@
 
 版本号取自源码。发布状态以 [GitHub Releases](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases) 为准；历史开发记录不代表每个版本都曾发布。
 
-## 未发布 · 仓库整理
+## 仓库整理 · 已随 v0.3.1 发布
 
 - 补充中文 README、Wiki、隐私说明、贡献指南和反馈模板。
 - 原创代码采用 MIT；补充上游许可证、来源和逐文件归属。

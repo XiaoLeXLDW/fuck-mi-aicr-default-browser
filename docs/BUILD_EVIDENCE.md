@@ -1,5 +1,25 @@
 # 构建与验收证据
 
+## v0.3.2 Universal APK 发布（2026-09-05）
+
+[v0.3.2 Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.2)
+已发布；tag 对应源码 `40435f727d30ce1327204db9163c2c32c553108f`。
+从该提交使用 JDK 17.0.9 执行 `scripts/build.ps1 -Variant Release -LocalTestSigning`，57 秒构建成功。
+
+- 本轮 Release **109 项单测实际执行通过**，0 failure / error / skipped。Shizuku tag 归属
+  测试已从先前 1 项增至 17 项，以下旧记录的 93 项不是最终发布测试总数。
+- 本地 Lint 0 错误、9 警告；[GitHub Android checks](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/actions/runs/33959628478)
+  的仓库检查、Debug / Release 单测、Lint、构建与报告上传均通过。
+- `MiBrowserRedirector-v0.3.2-universal.apk`：130924 bytes，SHA-256
+  `1a732b38786a7bb1ade5f8164b955ede9b31ad5b4bea2a273b837bb488b89eb1`。
+- 独立非 debuggable APK，无原生库 / ABI 限制；包名、版本、双后端 Manifest、v2 签名、
+  ZIP 对齐和五份内置许可证核验通过。证书 SHA-256 与 v0.3.1 一致：
+  `24211beec19c121f4135640e9c95c75c5b981726b3172b7658e169f28894d376`。
+- APK 与同名 `.sha256` 已上传，两项均从 GitHub 回下载，哈希逐一一致。
+
+继续使用历史测试证书，未执行手机安装或真机兼容验收；完整边界见[版本说明](releases/v0.3.2.md)。
+以下保留发布前和旧版的历史证据。
+
 ## v0.3.2 本地修复包（2026-09-05，发布前历史记录）
 
 针对浏览器菜单截图和“检查项目问题”报告修复，详情见 [修复记录](FIX_REVIEW_0.3.2.md)。

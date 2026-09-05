@@ -4,9 +4,9 @@
 `main` 已首次推送并配置本地 `origin`，无需重做下方首次建库命令。
 远端静态检查已通过，证据见[构建记录](BUILD_EVIDENCE.md)。
 
-`v0.3.1` 的 universal APK 与 SHA-256 校验文件已发布为
-[Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.1)，
-沿用历史测试证书；附件已回下载核验。当前版真机验收仍待完成，详见[版本说明](releases/v0.3.1.md)。
+`v0.3.2` 的 universal APK 与 SHA-256 校验文件已发布为
+[Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.2)，
+沿用历史测试证书；附件已回下载核验。当前版真机验收仍待完成，详见[版本说明](releases/v0.3.2.md)。
 
 目前保留私有可见性。GitHub 在启用请求后仍返回 `has_wiki=false`，独立 Wiki 尚未启用；
 完整内容可从[仓库内 Wiki 首页](wiki/Home.md)阅读。将来独立 Wiki 可用后再执行第 3 节同步步骤。
@@ -100,7 +100,7 @@ git -C .local/wiki push
 - [ ] 按[实机矩阵](实机验收.md)记录当前版本实际结果；未测场景标“未验证”，不写全兼容。
 - [ ] 从将要打 tag 的提交构建，核验包名、版本、签名证书指纹和 SHA-256。
 - [ ] 发布已签名 APK、同名 `.sha256`，同时提供对应源码与第三方许可；不发布私钥或测试日志。
-- [ ] 实验版本标记 **Pre-release**，参考[版本说明](releases/v0.3.1.md)填写该实际产物的证据。
+- [ ] 实验版本标记 **Pre-release**，参考[版本说明](releases/v0.3.2.md)填写该实际产物的证据。
 
 当前 Actions 只构建未签名包，不使用发布凭据、不创建 Release。`signed` 文件名只表示使用了传入的
 签名配置，维护者仍需核实证书身份。不要上传旧测试证书 APK 并称为正式稳定版。
