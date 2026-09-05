@@ -18,7 +18,7 @@ foreach ($relative in $files) {
     if ($relative -match $protectedPattern -and $relative -notmatch '(^|/)\.env\.example$') { $problems.Add("Private/generated path included: $relative"); continue }
     $path = Join-Path $projectRoot $relative
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
-    $item = Get-Item -LiteralPath $path
+    $item = Get-Item -LiteralPath $path -Force
     if ($item.Length -gt 1MB) { $problems.Add("Unexpected large source file: $relative") }
     if ($item.Extension -notin $textExtensions) { continue }
     $body = [IO.File]::ReadAllText($path)
