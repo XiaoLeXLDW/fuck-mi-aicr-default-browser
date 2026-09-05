@@ -1,5 +1,23 @@
 # 构建与验收证据
 
+## Universal APK 首次发布（2026-09-05）
+
+[v0.3.1 Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.1)
+已发布，tag 对应构建源码 `8962682697db5bf6aac9967799370e8da2a45393`。
+使用 JDK 17.0.9 和 `scripts/build.ps1 -Variant Release -LocalTestSigning` 构建，Gradle 44 秒完成。
+
+- Release 单测保留 28 项通过结果（输入未变化，Gradle 标记 UP-TO-DATE）；Lint 0 错误、9 警告。
+- `MiBrowserRedirector-v0.3.1-universal.apk`：112368 bytes；SHA-256
+  `c48a7554e223398e8026947fb62c34aae67604860aed01d9362f26c2b03903e0`。
+- 独立、非 debuggable 的 APK，无 native libraries / ABI 限制；包名、版本、双后端 Manifest、
+  v2 签名、ZIP 对齐和五份内置许可证核验通过。
+- 沿用历史测试证书，证书 SHA-256
+  `24211beec19c121f4135640e9c95c75c5b981726b3172b7658e169f28894d376`。
+- APK 和同名 `.sha256` 已上传；两项附件均从 GitHub 回下载，哈希与本地逐一一致。
+
+仓库继续保持私有。当前版本未补做真机验收，签名仍为测试证书，因此标记 Pre-release。
+完整版本说明见 [v0.3.1](releases/v0.3.1.md)。下方记录中的未发布状态为历史情况。
+
 ## GitHub 首次远端验证（2026-09-05）
 
 源码已推送至 [XiaoLeXLDW/fuck-mi-aicr-default-browser](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser)，

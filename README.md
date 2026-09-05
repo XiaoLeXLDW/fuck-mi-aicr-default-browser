@@ -3,6 +3,7 @@
 让小米系统交给小米浏览器的网页，改由你选择的浏览器打开。
 
 [GitHub 仓库](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser) ·
+[下载 APK](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.1) ·
 [问题反馈](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/issues) ·
 [自动构建](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/actions/workflows/android.yml)
 
@@ -25,13 +26,14 @@
 
 ## 使用步骤
 
-1. 安装可信来源、已签名的 APK，并安装一个可处理 HTTPS 的目标浏览器。未签名构建不能直接安装。
+1. 从 [v0.3.1 Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.1) 下载 universal APK 安装，并安装一个可处理 HTTPS 的目标浏览器。
 2. 在 Shizuku Manager 或 Stellar 中启动服务，打开“岛外打开”选择后端并授权。
 3. 选择目标浏览器，保持“观察模式”，点“开启接管”并触发原来会打开小米浏览器的入口。
 4. 确认“最近事件”能观察到目标网址后，关闭观察模式，再点“开启接管”使修改生效。
 5. 使用结束后点“停用并退出服务”，等待“停止完成”。划掉最近任务或结束页面不等于停止后台服务。
 
-安装更新需要**包名与签名兼容**。历史本地 APK 使用测试证书，不能承诺能覆盖未来的正式签名包；
+当前 universal APK 沿用历史测试证书，附带 SHA-256 校验文件。安装更新需要**包名与签名兼容**；
+未来若改用正式证书，需另行处理升级关系。
 保留现有安装前先看[构建与签名说明](docs/BUILDING.md)。首次无线调试配对另需时间。
 
 ## 兼容情况
