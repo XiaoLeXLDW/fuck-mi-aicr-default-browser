@@ -36,15 +36,18 @@
 | 项目 | 值 |
 | --- | --- |
 | APK | `MiBrowserRedirector-v0.3.3-universal.apk` |
-| 大小 | 183986 bytes |
+| 大小 | 以 GitHub Release 最终附件记录为准 |
 | 包名 | `dev.codex.mibrowserredirector` |
 | 版本 | `versionName 0.3.3` / `versionCode 10` |
-| APK SHA-256 | `2c71e235ce701c30739d504afeabc23d3aa36b07e86cf6880ce60ba12694cbc1` |
+| APK SHA-256 | 以 GitHub Release 同名 `.sha256` 附件为准 |
 | 证书 SHA-256 | `24211beec19c121f4135640e9c95c75c5b981726b3172b7658e169f28894d376` |
 
 Universal 附件与 `dist/MiBrowserRedirector-release-local-test-v0.3.3.apk` 字节一致，
-同名 `.sha256` 使用实际附件文件名。Debug 产物为 236126 bytes，SHA-256 为
-`ab0d31d004190f1684074e767088b581d75ad72d01471baaa1fd3197868ee76a`，不作为发行附件。
+同名 `.sha256` 使用实际附件文件名。Debug 产物仅用于开发验证，不作为发行附件。
+
+AGP 会在 APK 的 `META-INF/version-control-info.textproto` 写入构建时的 Git 提交号，
+因此源码提交后必须重新构建再计算最终哈希。发行包从 `v0.3.3` 对应提交构建；
+最终大小、哈希、源码提交和远端验证结果以 Release 正文及附件为准。
 
 APK 包名、版本、双后端 Manifest、非 debuggable、无原生 ABI 限制、v2 签名、ZIP 对齐、
 五份内置许可证、自适应/单色启动图标资源和校验文件已核验。沿用既有测试证书，

@@ -21,12 +21,15 @@ try {
 if (-not $timedOut -or $timer.ElapsedMilliseconds -gt 4000) { throw 'RED: child-process wait was not bounded.' }
 Write-Host 'PASS: hung local child is terminated within the deadline plus bounded cleanup.'
 
-$result = Invoke-AdbProcess -Arguments @('-NoProfile', '-NonInteractive', '-Command', '[Console]::Out.Write(("x" * 131072)); [Console]::Error.Write(("y" * 131072)); exit 7') -TimeoutMilliseconds 5000
+# Windows CI can spend several seconds on the first full PowerShell startup.
+# Give normal child runs their own startup/execution budget; keep the timeout case strict.
+$normalChildTimeoutMilliseconds = 30000
+$result = Invoke-AdbProcess -Arguments @('-NoProfile', '-NonInteractive', '-Command', '[Console]::Out.Write(("x" * 131072)); [Console]::Error.Write(("y" * 131072)); exit 7') -TimeoutMilliseconds $normalChildTimeoutMilliseconds
 if ($result.ExitCode -ne 7 -or $result.Output.Length -ne 262144) { throw 'RED: dual-pipe draining or exit-code propagation failed.' }
 Write-Host 'PASS: stdout/stderr larger than pipe buffers drain without deadlock; exit code preserved.'
 
 $values = @('plain', 'space value', 'C:\space path\', 'embedded"quote', 'slash\"quote', 'two\\"quote', '', 'a&b|c', '中文')
-$result = Invoke-AdbProcess -Arguments (@('-NoProfile', '-NonInteractive', '-File', (Join-Path $PSScriptRoot 'fixtures/echo-arguments.ps1')) + $values) -TimeoutMilliseconds 5000
+$result = Invoke-AdbProcess -Arguments (@('-NoProfile', '-NonInteractive', '-File', (Join-Path $PSScriptRoot 'fixtures/echo-arguments.ps1')) + $values) -TimeoutMilliseconds $normalChildTimeoutMilliseconds
 $decoded = ConvertFrom-Json -InputObject $result.Output
 if ($result.ExitCode -ne 0 -or $decoded.Count -ne $values.Count) { throw 'RED: native argument roundtrip failed.' }
 for ($i = 0; $i -lt $values.Count; $i++) {
