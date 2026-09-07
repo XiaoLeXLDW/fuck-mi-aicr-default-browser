@@ -62,4 +62,9 @@ if ($fillViewport -ne "true") {
     throw "UI check RED: the page must remain vertically scrollable with fillViewport=true"
 }
 
-Write-Host "UI check GREEN: fixed 72dp viewport margin, clipped scrolling, and all controller view IDs are intact."
+$switch = $layout.SelectSingleNode("//*[local-name()='Switch']")
+if ($null -eq $switch -or $switch.GetAttribute('contentDescription', $androidNamespace) -ne '@string/observe_only') {
+    throw 'UI check RED: the observation switch must have an accessible name.'
+}
+Write-Host "UI check GREEN: fixed 72dp viewport margin, clipped scrolling, accessible observation switch, and controller IDs are intact."
+Write-Host 'Static structure only; rotation, system insets, large fonts and TalkBack still require device validation.'

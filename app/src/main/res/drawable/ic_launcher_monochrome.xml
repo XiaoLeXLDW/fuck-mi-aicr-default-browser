@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:pivotX="54" android:pivotY="54" android:scaleX="0.9" android:scaleY="0.9">
+    <!-- Cat ears and face share the family silhouette; detail stays legible when tinted. -->
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.8" android:strokeLineJoin="round" android:strokeLineCap="round"
+        android:pathData="M33,46L31,30L46,38Q52,35 59,38L74,30L72,47Q77,55 72,63M57,73Q47,78 36,69Q27,61 33,46M37,55Q41,51 45,55M60,52L60,56M46,64Q50,68 54,64" />
+    <!-- Browser corner and the external-open arrow. -->
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.8" android:strokeLineJoin="round" android:strokeLineCap="round"
+        android:pathData="M77,70L77,77Q77,80 74,80L61,80Q58,80 58,77L58,64Q58,61 61,61L67,61M65,73L80,58M71,58L80,58L80,67" />
+    </group>
+</vector>

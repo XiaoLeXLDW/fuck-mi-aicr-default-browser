@@ -64,6 +64,7 @@ foreach ($source in $licensePairs.Keys) {
 }
 . (Join-Path $PSScriptRoot 'build-common.ps1')
 $metadata = Get-ProjectMetadata -ProjectRoot $projectRoot
+& (Join-Path $PSScriptRoot 'verify-current-docs.ps1')
 if ($problems.Count -gt 0) { $problems | ForEach-Object { Write-Host "FAIL: $_" }; throw "Repository check failed: $($problems.Count) issue(s)." }
 Write-Host "PASS: $($files.Count) candidate files; local links, PowerShell syntax, protected paths, common credential patterns, Wrapper and license copies; v$($metadata.VersionName)."
 Write-Host 'This checks current candidate files, not Git history, remote CI or real-device behavior.'

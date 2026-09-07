@@ -22,8 +22,8 @@ android {
         applicationId "dev.codex.mibrowserredirector"
         minSdk 26
         targetSdk 35
-        versionCode 9
-        versionName "0.3.2"
+        versionCode 10
+        versionName "0.3.3"
     }
 
     signingConfigs {
@@ -86,6 +86,30 @@ dependencies {
     compileOnly "androidx.annotation:annotation:1.3.0"
 
     testImplementation "junit:junit:4.13.2"
+}
+
+// Compile the real native session implementation against test-only Android/manager transports.
+// These sources are outside every Android source set and can never enter an APK.
+configurations { stellarHarnessTest }
+dependencies { stellarHarnessTest "junit:junit:4.13.2" }
+def compileStellarHarness = tasks.register("compileStellarLifecycleHarness", JavaCompile) {
+    source rootProject.fileTree("scripts/stellar-harness") { include "**/*.java" }
+    source file("src/main/java/dev/codex/mibrowserredirector/stellar/NativeStellarUserService.java")
+    source file("src/main/java/dev/codex/mibrowserredirector/stellar/NativeUserServiceArgs.java")
+    source file("src/main/java/dev/codex/mibrowserredirector/UserServiceStopper.java")
+    classpath = configurations.stellarHarnessTest
+    destinationDirectory = layout.buildDirectory.dir("classes/stellarLifecycleHarness")
+    options.release = 17
+    options.encoding = "UTF-8"
+}
+def stellarLifecycleTests = tasks.register("testStellarLifecycle", Test) {
+    dependsOn compileStellarHarness
+    testClassesDirs = files(compileStellarHarness.flatMap { it.destinationDirectory })
+    classpath = files(testClassesDirs) + configurations.stellarHarnessTest
+    useJUnit()
+}
+tasks.configureEach {
+    if (name == "testDebugUnitTest" || name == "testReleaseUnitTest") dependsOn stellarLifecycleTests
 }
 
 // AGP only auto-creates its default user-home debug key. Keep this disposable

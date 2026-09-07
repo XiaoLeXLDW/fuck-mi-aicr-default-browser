@@ -1,14 +1,15 @@
 <resources>
-    <color name="bg">#FFF9F5</color>
+    <color name="bg">#F4F8F9</color>
     <color name="surface">#FFFFFFFF</color>
-    <color name="surface_subtle">#FFFAF7</color>
-    <color name="ink">#201B17</color>
-    <color name="muted">#71675F</color>
-    <color name="accent">#D84B2A</color>
-    <color name="accent_dark">#A72D14</color>
-    <color name="accent_pressed">#BC3A1F</color>
-    <color name="accent_soft">#FFF0E9</color>
-    <color name="accent_disabled">#E8A894</color>
-    <color name="line">#E9DDD5</color>
-    <color name="line_strong">#DDC9BD</color>
+    <color name="surface_subtle">#EFF5F6</color>
+    <color name="ink">#172027</color>
+    <color name="muted">#586870</color>
+    <color name="accent">#086F7E</color>
+    <color name="accent_dark">#055561</color>
+    <color name="accent_pressed">#055866</color>
+    <color name="accent_soft">#E5F5F7</color>
+    <color name="accent_disabled">#97BEC5</color>
+    <color name="line">#DAE6E9</color>
+    <color name="line_strong">#BCCFD4</color>
+    <color name="launcher_background">#141A20</color>
 </resources>

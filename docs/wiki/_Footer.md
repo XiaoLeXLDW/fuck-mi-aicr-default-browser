@@ -1,1 +1,1 @@
-对应源码 **v0.3.2** · 当前版实机兼容与视觉验收待完成 · [Wiki 首页](Home.md) · [隐私说明](Privacy.md)
+**v0.3.3 Pre-release** · 本版 Shizuku、Stellar 原生及异常恢复仍待实机验收 · [Wiki 首页](Home.md) · [隐私说明](Privacy.md)

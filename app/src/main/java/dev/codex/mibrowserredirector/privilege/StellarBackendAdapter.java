@@ -107,6 +107,16 @@ final class StellarBackendAdapter implements PrivilegeRuntime.BackendAdapter {
             this.callback = callback;
             this.nativeCallback = new NativeStellarUserService.Callback() {
                     @Override
+                    public void onBindingPrepared(NativeStellarUserService.ConnectionHandle prepared) {
+                        handle = prepared;
+                    }
+
+                    @Override
+                    public void onCleanupRequired(IBinder binder, String message) {
+                        StellarSession.this.callback.onCleanupRequired(StellarSession.this, binder, message);
+                    }
+
+                    @Override
                     public void onServiceConnected(IBinder binder) {
                         StellarSession.this.callback.onServiceConnected(
                                 StellarSession.this, binder);
@@ -134,6 +144,22 @@ final class StellarBackendAdapter implements PrivilegeRuntime.BackendAdapter {
         @Override
         public void remove() throws Exception {
             NativeStellarUserService.unbindUserService(handle);
+        }
+
+        @Override public IBinder cleanupBinder() {
+            return NativeStellarUserService.cleanupBinder(handle);
+        }
+
+        @Override public boolean allowsServiceCommands(IBinder candidate) {
+            return NativeStellarUserService.allowsServiceCommands(handle);
+        }
+
+        @Override public void rejectServiceCommands(IBinder rejected) {
+            NativeStellarUserService.rejectBusinessProtocol(handle);
+        }
+
+        @Override public void onStopConfirmed() {
+            NativeStellarUserService.confirmedStopped(handle);
         }
 
         @Override

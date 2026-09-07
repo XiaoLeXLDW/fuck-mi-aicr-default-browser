@@ -1,5 +1,10 @@
 # 构建与签名
 
+下列输出名以当前版本 **v0.3.3（code 10 / 协议 200 / 服务代 30004）** 为例。
+`build.ps1` 从源码读取版本并生成文件名；最终以 `app/build.gradle`、`ServiceIdentity.java` 和
+构建日志为准，不要靠手动改 APK 文件名伪装升级。当前产物、校验值与验证范围见
+[构建证据](BUILD_EVIDENCE.md)和[版本说明](releases/v0.3.3.md)。
+
 ## 工具版本
 
 | 工具 | 当前配置 |
@@ -24,11 +29,11 @@
 脚本不安装 JDK。若 PowerShell 阻止脚本执行，可在当前终端使用
 `Set-ExecutionPolicy -Scope Process Bypass`，无需更改全局策略。
 
-当前工作树输出 `dist/MiBrowserRedirector-debug-debug-signed-v0.3.2.apk` 和同名 `.sha256`。
+按上述版本构建会输出 `dist/MiBrowserRedirector-debug-debug-signed-v0.3.3.apk` 和同名 `.sha256`。
 新克隆会生成项目内 `.local/debug.keystore`，不同克隆的开发证书可能不同。
 
 ```powershell
-.\scripts\install.ps1 -Apk .\dist\MiBrowserRedirector-debug-debug-signed-v0.3.2.apk
+.\scripts\install.ps1 -Apk .\dist\MiBrowserRedirector-debug-debug-signed-v0.3.3.apk
 ```
 
 安装会操作 ADB 设备；多个设备时追加 `-Serial`。不能覆盖不同签名的现有安装，脚本不会自动卸载。
@@ -39,8 +44,8 @@
 .\scripts\build.ps1 -Variant Release
 ```
 
-无签名配置时输出 `dist/MiBrowserRedirector-release-unsigned-v0.3.2.apk`。这是可检查的构建产物，
-**不能直接安装或当作已签名发行包**。构建脚本为两种 Variant 执行单测、Lint、UI 结构检查、
+无签名配置时输出 `dist/MiBrowserRedirector-release-unsigned-v0.3.3.apk`。这是可检查的构建产物，
+**不能直接安装或当作已签名发行包**。每次构建脚本只为所选 Variant 执行单测、Lint，另做 UI 结构检查、
 Manifest/包名/版本检查，并按签名类型验证 APK；不会替代实机验收。
 
 | 配置 | 输出标签 | 用途 |
@@ -84,13 +89,31 @@ Windows `bootstrap.ps1` / `build.ps1` / ADB 辅助脚本依赖 `.bat` / `.exe` �
 
 ## 验证与报告位置
 
+Debug / Release 单测同时依赖 `:app:testStellarLifecycle`：直接编译原生会话生产源码，
+使用只在测试目录内的 Android/管理器替身。测试替身不进入 APK。报告位于
+`app/build/test-results/testStellarLifecycle/`；它不能替代真实设备验证。
+
+离线辅助脚本回归：
+
+```powershell
+.\tests\verify-stop.Tests.ps1
+.\tests\verify-stop-process.Tests.ps1
+.\tests\current-docs.Tests.ps1
+```
+
+这些测试不连接设备。`verify-repository.ps1` 另检查当前版本/服务代文档。
+
 ```powershell
 .\scripts\verify-repository.ps1
 .\scripts\verify-ui.ps1
 ```
 
 单测报告：`app/build/reports/tests/`；Lint：`app/build/reports/lint-results-*.html`。
-GitHub Actions 运行同类静态检查，并上传未签名 APK 与报告；配置存在不等于远端已通过。
+GitHub Actions 的 [android.yml](../.github/workflows/android.yml) 同时执行 Debug / Release 单测、
+Lint 和构建，上传 `app-debug.apk`（开发签名，可安装测试）、`app-release-unsigned.apk`
+（未签名，不可直接安装）及 `app/build/reports/`，构建附件保留 14 天。开发证书不是发行证书，
+也不保证跨 CI 运行或本机安装可覆盖；当前工作流没有发行密钥、自动 Release 或 Wiki 发布步骤。
+当前版本的本地结果与实际远端 CI 状态分别记录在[构建证据](BUILD_EVIDENCE.md)。
 真机脚本会操作手机，执行前阅读[实机验收](实机验收.md)。
 
 修改根许可证或第三方声明后，同步 `app/src/main/assets/licenses/` 对应文本；仓库检查会检查副本一致性。

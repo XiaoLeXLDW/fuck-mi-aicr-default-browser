@@ -130,6 +130,13 @@ public final class MainActivity extends Activity {
                 public void onServiceConnected(ServiceSession session, IBinder binder) {
                     if (serviceSession != session) return;
                     if (activityDestroyed && lifecycleState != LifecycleState.STOPPING) return;
+                    if (stopWorkerRunning) return; // The stop worker owns this cleanup identity.
+                    if (!session.allowsServiceCommands(binder)) {
+                        onCleanupRequired(session, binder, "服务身份未通过，等待确认清理");
+                        return;
+                    }
+                    stateReadPending = false;
+                    rpcToken++;
                     connectionPending = false;
                     connectionToken++;
                     operationBackend = session.backendId();
@@ -148,9 +155,12 @@ public final class MainActivity extends Activity {
                 public void onServiceDisconnected(ServiceSession session) {
                     if (serviceSession != session) return;
                     if (activityDestroyed && lifecycleState != LifecycleState.STOPPING) return;
+                    stateReadPending = false;
+                    rpcToken++;
+                    if (stopWorkerRunning) return; // A disconnect callback is not death confirmation.
                     if (lifecycleState == LifecycleState.STOPPING && pendingStop
                             && !stopWorkerRunning
-                            && remoteService != null && remoteBinder != null) {
+                            && serviceSession != null) {
                         connectionPending = false;
                         connectionToken++;
                         stopConnectedService(remoteService, remoteBinder);
@@ -185,16 +195,12 @@ public final class MainActivity extends Activity {
                         String message) {
                     if (serviceSession != session) return;
                     if (activityDestroyed && lifecycleState != LifecycleState.STOPPING) return;
+                    stateReadPending = false;
+                    rpcToken++;
                     detachSession(session);
                     connectionPending = false;
                     connectionToken++;
                     serviceSession = null;
-                    if (errorCode == -2 && !identityRetryAttempted) {
-                        identityRetryAttempted = true;
-                        showStatus("已清理身份不匹配的旧服务，正在重新连接…");
-                        mainHandler.postDelayed(MainActivity.this::bindForPendingAction, 250L);
-                        return;
-                    }
                     lifecycleState = LifecycleState.ERROR;
                     boolean wasStopping = pendingStop;
                     if (!wasStopping) {
@@ -208,12 +214,30 @@ public final class MainActivity extends Activity {
                     showStatus((wasStopping ? "停止未确认" : "UserService 启动失败")
                             + "（" + errorCode + "）：" + message);
                 }
+
+                @Override
+                public void onCleanupRequired(ServiceSession session, IBinder binder, String message) {
+                    if (serviceSession != session || activityDestroyed || stopWorkerRunning) return;
+                    if (!ownsOperation(operationEpoch)) claimOperation();
+                    preferences.edit().putBoolean(PREF_DESIRED_ENABLED, false)
+                            .putString(PREF_ACTIVE_BACKEND, session.backendId().storageValue()).apply();
+                    clearPendingActions();
+                    operationBackend = session.backendId();
+                    remoteBinder = binder;
+                    remoteService = null; // An identity-rejected Binder is not a business endpoint.
+                    pendingStop = true;
+                    if (stopDeadlineNanos == 0L) armWholeStopDeadline();
+                    eventText.setText(message == null ? "身份异常，等待确认清理" : message);
+                    stopConnectedService(null, binder);
+                }
             };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        PageInsets.install(findViewById(R.id.page_scroll),
+                getResources().getDimensionPixelSize(R.dimen.page_top_safe_margin));
 
         preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
         migrateLegacyBackendState();
@@ -411,7 +435,7 @@ public final class MainActivity extends Activity {
 
     private void runPendingAction() {
         if (pendingEnablePackage == null && !pendingStop) return;
-        if (pendingStop && remoteService != null && remoteBinder != null) {
+        if (pendingStop && serviceSession != null) {
             stopConnectedService(remoteService, remoteBinder);
             return;
         }
@@ -539,6 +563,8 @@ public final class MainActivity extends Activity {
         if (!activityDestroyed && serviceSession == session) return true;
         if (!activityDestroyed && ownsOperation(epoch) && connectionPending && token == connectionToken) {
             ServiceSession previous = serviceSession;
+            stateReadPending = false;
+            rpcToken++;
             serviceSession = session;
             if (previous != null && previous != session) detachSession(previous);
             return true;
@@ -562,6 +588,11 @@ public final class MainActivity extends Activity {
 
     private PrivilegeRuntime.ServiceCallback callbackForBinding(int epoch, int token) {
         return new PrivilegeRuntime.ServiceCallback() {
+            @Override public void onCleanupRequired(ServiceSession session, IBinder binder, String message) {
+                mainHandler.post(() -> {
+                    if (adoptBinding(epoch, token, session)) userServiceCallback.onCleanupRequired(session, binder, message);
+                });
+            }
             @Override public void onServiceConnected(ServiceSession session, IBinder binder) {
                 mainHandler.post(() -> {
                     if (adoptBinding(epoch, token, session)) userServiceCallback.onServiceConnected(session, binder);
@@ -601,7 +632,7 @@ public final class MainActivity extends Activity {
         if (candidate == null || binder != remoteBinder || session != serviceSession) return;
         int epoch = operationEpoch;
         int verificationToken = ++rpcToken;
-        watchRpc(epoch, verificationToken, candidate, binder, session, "服务身份验证超时（8 秒）");
+        watchRpc(epoch, verificationToken, candidate, binder, session, true, "服务身份验证超时（8 秒）");
         submitIo(() -> {
             if (rpcToken != verificationToken) return;
             int protocol = -1;
@@ -637,9 +668,10 @@ public final class MainActivity extends Activity {
             int serviceGeneration, String failure) {
         if (!ownsOperation(epoch) || serviceSession != session) return;
         if (activityDestroyed && lifecycleState != LifecycleState.STOPPING) return;
-        boolean matches = protocol == ServiceIdentity.PROTOCOL_VERSION
+        boolean matches = failure == null && protocol == ServiceIdentity.PROTOCOL_VERSION
                 && serviceGeneration == ServiceIdentity.USER_SERVICE_GENERATION;
         if (!matches) {
+            session.rejectServiceCommands(binder);
             if (!beginGlobalStop(epoch)) {
                 finishOperationFailure("旧服务清理正在进行，请稍后重试");
                 return;
@@ -705,7 +737,7 @@ public final class MainActivity extends Activity {
         lifecycleState = LifecycleState.STARTING;
         setButtonsEnabled(false);
         showStatus("正在启用 " + ServiceIdentity.BUILD_LABEL + " 控制器…");
-        watchRpc(epoch, enableToken, service, binder, session, "启用调用超时（8 秒）");
+        watchRpc(epoch, enableToken, service, binder, session, false, "启用调用超时（8 秒）");
         submitIo(() -> {
             if (rpcToken != enableToken) return;
             try {
@@ -838,6 +870,7 @@ public final class MainActivity extends Activity {
                 UserServiceStopper.Result result = budgetMillis <= 0L
                         ? new UserServiceStopper.Result(false, "总停止截止时间已到，未发起新的清理调用")
                         : performStop(service, binder, stopSession, budgetMillis);
+                if (result.stopped && stopSession != null) stopSession.onStopConfirmed();
                 mainHandler.post(() -> completion.complete(result));
             });
         } catch (RejectedExecutionException busy) {
@@ -853,17 +886,31 @@ public final class MainActivity extends Activity {
                     new UserServiceStopper.Endpoint() {
                         @Override
                         public String disable() throws Exception {
-                            return service.disable();
+                            if (stopSession != null && !stopSession.allowsServiceCommands(binder)) {
+                                return "身份未通过：仅向来源管理器请求停止";
+                            }
+                            IRedirectorService endpoint = service;
+                            if (endpoint == null && stopSession != null) {
+                                endpoint = IRedirectorService.Stub.asInterface(stopSession.cleanupBinder());
+                            }
+                            return endpoint == null ? "尚无可信业务 Binder" : endpoint.disable();
                         }
 
                         @Override
                         public void destroy() throws Exception {
-                            UserServiceBinderHelper.destroy(binder);
+                            if (stopSession == null ? service != null : stopSession.allowsServiceCommands(binder)) {
+                                IBinder target = stopSession == null ? null : stopSession.cleanupBinder();
+                                if (target == null) target = binder;
+                                if (target != null) UserServiceBinderHelper.destroy(target);
+                            }
                         }
 
                         @Override
                         public boolean isAlive() {
-                            return UserServiceBinderHelper.isAlive(binder);
+                            IBinder observed = stopSession == null ? null : stopSession.cleanupBinder();
+                            if (observed == null) observed = binder;
+                            // No Binder is missing evidence, not proof that a process is dead.
+                            return observed == null || UserServiceBinderHelper.isAlive(observed);
                         }
                     },
                     () -> {
@@ -1200,6 +1247,7 @@ public final class MainActivity extends Activity {
     }
 
     private void clearPendingActions() {
+        stateReadPending = false;
         managerPending = false;
         managerToken++;
         rpcToken++;
@@ -1265,14 +1313,20 @@ public final class MainActivity extends Activity {
     }
 
     private void watchRpc(int epoch, int token, IRedirectorService service, IBinder binder,
-            ServiceSession session, String failure) {
-        mainHandler.postDelayed(() -> {
-            if (!ownsOperation(epoch) || activityDestroyed || rpcToken != token
-                    || service != remoteService || session != serviceSession) return;
-            rpcToken++;
-            pendingEnablePackage = null;
-            cleanupFailedEnable(epoch, service, binder, session, failure);
-        }, CONNECTION_TIMEOUT_MILLIS);
+            ServiceSession session, boolean verifyingIdentity, String failure) {
+        mainHandler.postDelayed(() -> finishRpcTimeout(epoch, token, service, binder,
+                session, verifyingIdentity, failure), CONNECTION_TIMEOUT_MILLIS);
+    }
+
+    private void finishRpcTimeout(int epoch, int token, IRedirectorService service, IBinder binder,
+            ServiceSession session, boolean verifyingIdentity, String failure) {
+        if (!ownsOperation(epoch) || activityDestroyed || rpcToken != token
+                || service != remoteService || session != serviceSession) return;
+        // A valid transport token does not establish that business transaction IDs are safe.
+        if (verifyingIdentity) session.rejectServiceCommands(binder);
+        rpcToken++;
+        pendingEnablePackage = null;
+        cleanupFailedEnable(epoch, service, binder, session, failure);
     }
 
     private void showStatus(String message) {

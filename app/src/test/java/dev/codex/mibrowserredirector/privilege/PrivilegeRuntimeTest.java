@@ -169,6 +169,12 @@ public final class PrivilegeRuntimeTest {
         public ServiceSession bind(PrivilegeRuntime.ServiceCallback callback) {
             bindCount++;
             return new ServiceSession() {
+                private boolean allowed = true;
+
+                @Override public boolean allowsServiceCommands(android.os.IBinder candidate) { return allowed; }
+
+                @Override public void rejectServiceCommands(android.os.IBinder rejected) { allowed = false; }
+
                 @Override
                 public BackendId backendId() {
                     return id;

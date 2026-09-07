@@ -15,6 +15,26 @@ import dev.codex.mibrowserredirector.privilege.PrivilegeRuntime.ServiceSession;
 import rikka.shizuku.Shizuku;
 
 final class ShizukuBackendAdapter implements PrivilegeRuntime.BackendAdapter {
+    // Page/session leases may change while a rejected daemon stays alive. Keep that knowledge
+    // in process scope, tied to both source and service Binder identity, not a package/tag alone.
+    private record RejectedService(IBinder manager, IBinder service) { }
+    private static final java.util.List<RejectedService> PROTOCOL_REJECTIONS = new java.util.ArrayList<>();
+
+    private static synchronized boolean protocolRejected(IBinder manager, IBinder service) {
+        // isBinderAlive uses local death knowledge, never ping/remote protocol transactions.
+        PROTOCOL_REJECTIONS.removeIf(item -> !item.manager().isBinderAlive() || !item.service().isBinderAlive());
+        for (RejectedService item : PROTOCOL_REJECTIONS) {
+            if (item.manager() == manager && item.service() == service) return true;
+        }
+        return false;
+    }
+
+    private static synchronized void rejectProtocol(IBinder manager, IBinder service) {
+        if (manager != null && service != null && !protocolRejected(manager, service)) {
+            PROTOCOL_REJECTIONS.add(new RejectedService(manager, service));
+        }
+    }
+
     private final Handler callbackHandler;
     private final Shizuku.UserServiceArgs serviceArgs;
     private final ShizukuTagOwnership tagOwnership;
@@ -185,6 +205,14 @@ final class ShizukuBackendAdapter implements PrivilegeRuntime.BackendAdapter {
         @Override
         public BackendId backendId() {
             return BackendId.SHIZUKU;
+        }
+
+        @Override public boolean allowsServiceCommands(IBinder candidate) {
+            return !protocolRejected(managerBinder, candidate);
+        }
+
+        @Override public void rejectServiceCommands(IBinder rejected) {
+            rejectProtocol(managerBinder, rejected);
         }
 
         @Override

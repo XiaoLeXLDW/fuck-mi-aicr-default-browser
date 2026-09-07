@@ -48,3 +48,17 @@ jobs:
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/release/app-release-unsigned.apk
             app/build/reports/
+
+  script-tests:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Offline PowerShell regression tests
+        shell: pwsh
+        run: |
+          ./tests/verify-stop.Tests.ps1
+          ./tests/verify-stop-process.Tests.ps1
+          ./tests/current-docs.Tests.ps1

@@ -136,6 +136,10 @@ public final class PrivilegeRuntime implements AutoCloseable {
     }
 
     public interface ServiceCallback {
+        default void onCleanupRequired(ServiceSession session, IBinder binder, String message) {
+            onServiceStartFailed(session, -2, message);
+        }
+
         void onServiceConnected(ServiceSession session, IBinder binder);
 
         void onServiceDisconnected(ServiceSession session);
@@ -144,6 +148,15 @@ public final class PrivilegeRuntime implements AutoCloseable {
     }
 
     public interface ServiceSession {
+        default IBinder cleanupBinder() { return null; }
+
+        default boolean allowsServiceCommands(IBinder candidate) { return true; }
+
+        /** Retain cleanup ownership while rejecting the operation's exact captured Binder. */
+        void rejectServiceCommands(IBinder rejected);
+
+        default void onStopConfirmed() { }
+
         BackendId backendId();
 
         void remove() throws Exception;

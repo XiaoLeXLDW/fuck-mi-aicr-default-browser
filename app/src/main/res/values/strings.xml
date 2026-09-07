@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">岛外打开</string>
     <string name="service_badge">SHIZUKU 服务</string>
-    <string name="title">小米浏览器重定向</string>
+    <string name="title">岛外打开</string>
     <string name="subtitle">通过权限服务拦住小米写死的浏览器，把网页交给你选定的浏览器</string>
     <string name="backend_label">权限后端</string>
     <string name="backend_dropdown">展开权限后端列表</string>

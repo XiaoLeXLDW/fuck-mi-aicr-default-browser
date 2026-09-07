@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/page_scroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
@@ -17,6 +18,19 @@
         android:paddingEnd="@dimen/page_horizontal_margin"
         android:paddingBottom="@dimen/page_bottom_margin">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="12dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/brand_app_icon" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="28dp"
@@ -30,6 +44,8 @@
             android:textColor="@color/accent_dark"
             android:textSize="11sp"
             android:textStyle="bold" />
+
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -120,7 +136,8 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
+                android:layout_height="wrap_content"
+                android:minHeight="64dp"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/control_field"
                 android:gravity="center_vertical"
@@ -157,6 +174,7 @@
                     android:id="@+id/observe_switch"
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
+                    android:contentDescription="@string/observe_only"
                     android:checked="true" />
             </LinearLayout>
 
