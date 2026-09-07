@@ -36,10 +36,10 @@
 | 项目 | 值 |
 | --- | --- |
 | APK | `MiBrowserRedirector-v0.3.3-universal.apk` |
-| 大小 | 以 GitHub Release 最终附件记录为准 |
+| 大小 | 183982 bytes |
 | 包名 | `dev.codex.mibrowserredirector` |
 | 版本 | `versionName 0.3.3` / `versionCode 10` |
-| APK SHA-256 | 以 GitHub Release 同名 `.sha256` 附件为准 |
+| APK SHA-256 | `6481861de5e699ba9d9b26a5e5d513f83ae969a06c9dcb7b82827432f8206f6c` |
 | 证书 SHA-256 | `24211beec19c121f4135640e9c95c75c5b981726b3172b7658e169f28894d376` |
 
 Universal 附件与 `dist/MiBrowserRedirector-release-local-test-v0.3.3.apk` 字节一致，
@@ -47,7 +47,8 @@ Universal 附件与 `dist/MiBrowserRedirector-release-local-test-v0.3.3.apk` 字
 
 AGP 会在 APK 的 `META-INF/version-control-info.textproto` 写入构建时的 Git 提交号，
 因此源码提交后必须重新构建再计算最终哈希。发行包从 `v0.3.3` 对应提交构建；
-最终大小、哈希、源码提交和远端验证结果以 Release 正文及附件为准。
+最终构建提交为 `ce7985e92c46ecb937d798935505ea7f701186b9`，与 APK 内嵌提交号一致。
+本页与 Release 正文均记录从该标签构建后的实际大小和哈希。
 
 APK 包名、版本、双后端 Manifest、非 debuggable、无原生 ABI 限制、v2 签名、ZIP 对齐、
 五份内置许可证、自适应/单色启动图标资源和校验文件已核验。沿用既有测试证书，
@@ -61,6 +62,19 @@ APK 包名、版本、双后端 Manifest、非 debuggable、无原生 ABI 限制
 CI 产物是开发签名 Debug 与未签名 Release，不包含发行私钥；可安装的预发布附件由本地签名构建提供。
 对应源码以 `v0.3.3` 标签为准，实际远端运行与附件核验信息记录在
 [GitHub Release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.3)。
+
+## 已完成的发布核验
+
+2026-09-07，最终源码 `ce7985e92c46ecb937d798935505ea7f701186b9` 的两轮 GitHub CI 全部成功：
+[标签构建](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/actions/runs/34111407968) ·
+[主分支构建](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/actions/runs/34111408521)。
+两轮均包含 Ubuntu Android 构建任务与 Windows 离线脚本测试任务。
+
+可安装的 v0.3.3 APK 与同名 `.sha256` 已发布并回下载，大小、SHA-256 与本地逐一一致。
+旧版 v0.3.1 / v0.3.2 的 Release、附件和标签已删除；当前分支中过时版本说明与审查记录已清理，
+旧提交仍保留在 main 的 Git 历史中。仓库私有状态和未启用独立 Wiki 的设置保持不变。
+
+发行标签固定指向实际构建源码；本页发布结果由后续纯文档提交更新，不改变标签或 APK 来源。
 
 ## 实机边界
 
