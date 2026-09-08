@@ -1,6 +1,6 @@
 # 隐私说明
 
-本页面向 v0.3.3，数据流按现有源码核对。应用没有账号、分析 SDK 或上传实现，Manifest 未声明 `INTERNET`。但 UserService 使用管理器提供的 shell/root 身份，目标浏览器会访问网址；不能据此声称整个特权链路无法联网。
+本页面向 v0.3.4，数据流按现有源码核对。应用没有账号、分析 SDK 或上传实现，Manifest 未声明 `INTERNET`。但 UserService 使用管理器提供的 shell/root 身份，目标浏览器会访问网址；不能据此声称整个特权链路无法联网。
 
 | 数据 | 当前用途与留存 |
 | --- | --- |
@@ -20,7 +20,7 @@
 
 配置存于私有 `redirector` SharedPreferences；随机 `stellar_verification_token` 用于服务
 身份校验，不是账号或遥测 ID。管理器返回的原生 token、Binder、连接回调保存在进程内存。
-完整持久化字段见主仓库 `docs/PRIVACY.md`；本应用不建立浏览历史数据库。
+完整持久化字段见[完整隐私说明](../PRIVACY.md)；本应用不建立浏览历史数据库。
 
 应用未声明存储、无障碍服务或 VPN 权限，也不读取网页正文或浏览器 Cookie。`allowBackup=false` 不覆盖设备厂商和用户自行制作的备份。
 
@@ -30,6 +30,9 @@
 2. 分享前检查截图、日志和终端输出，删除账号、设备序列号、无线调试地址、完整私人 URL 与 token。
 3. 停用时点“停用并退出服务”并等到 Binder 死亡确认。随后清除应用数据或卸载可重置配置，但不会删除浏览器历史与自行导出的日志。
 
-仓库的 `scripts/verify-stop.ps1` 会安装并操作应用、启动/停止会话，并将页面转储写入设备 `/sdcard/codex-redirector-window.xml`；它不是只读脚本。保留或分享转储前同样检查敏感信息。
+仓库的 `scripts/verify-stop.ps1` 会安装并操作应用、启动/停止会话；`-SkipInstall` 可跳过安装。
+页面转储写入设备 `/sdcard/codex-redirector-<随机 GUID>.xml`，每次使用独立文件名。
+退出时仅尝试删除本次转储；ADB 断线、脚本被强制终止或删除失败可能留下文件。
+它不是只读脚本。分享转储与终端输出前检查敏感信息；处理残留时只删除确认属于本次运行的文件。
 
 更多恢复步骤见[故障排查](Troubleshooting.md)。

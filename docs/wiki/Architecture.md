@@ -36,7 +36,7 @@ flowchart TD
 | `UserServiceStopper` 与 Binder helper | disable、后端 stop/remove、destroy 补救、Binder 死亡确认 |
 
 业务服务与主 Activity 分处进程。Stellar（页面称“兼容服务（原生 API）”）后缀是 `redirector`，
-Shizuku 是 `redirector_shizuku`；v0.3.3 使用协议 `200` / 服务代 `30004`。
+Shizuku 是 `redirector_shizuku`；v0.3.4 使用协议 `200` / 服务代 `30005`。
 页面退出清理本页连接引用，daemon 可继续运行。
 Shizuku SDK 按整个 tag 解绑；`ShizukuTagOwnership` 跟踪本地归属，旧页面仅注销自身回调，
 适配器确认 tag 归属安全时才调用 SDK 解绑，以免破坏新页面会话。

@@ -65,7 +65,7 @@ public final class RedirectorUserService extends IRedirectorService.Stub {
                     + "\n接口：" + systemController.implementationName();
         } catch (SecurityException e) {
             enabled = false;
-            return "错误：Shell 没有 SET_ACTIVITY_WATCHER 权限\n" + compactError(e);
+            return "错误：系统拒绝注册 Activity Controller\n" + compactError(e);
         } catch (Throwable e) {
             enabled = false;
             return "错误：无法注册 Activity Controller\n" + compactError(e);

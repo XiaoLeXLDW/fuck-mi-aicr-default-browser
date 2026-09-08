@@ -34,6 +34,7 @@ jobs:
         run: |
           ./scripts/verify-repository.ps1
           ./scripts/verify-ui.ps1
+          ./tests/export-wiki.Tests.ps1
           . ./scripts/build-common.ps1
           Get-ProjectMetadata -ProjectRoot (Get-Location).Path | Format-List
       - name: Unit tests, lint, and APK builds
@@ -62,3 +63,4 @@ jobs:
           ./tests/verify-stop.Tests.ps1
           ./tests/verify-stop-process.Tests.ps1
           ./tests/current-docs.Tests.ps1
+          ./tests/export-wiki.Tests.ps1

@@ -7,7 +7,7 @@
 让小米系统交给小米浏览器的网页，改由你选择的浏览器打开。
 
 [GitHub 仓库](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser) ·
-[下载 APK](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.3) ·
+[下载 APK](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.4) ·
 [问题反馈](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/issues) ·
 [自动构建](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/actions/workflows/android.yml)
 
@@ -15,8 +15,8 @@
 观察系统对 `com.android.browser` 的网页启动请求，提取 HTTP/HTTPS 网址并转交目标浏览器。
 支持通过 ADB 启动权限服务，无需 Root；本项目与 Xiaomi、Shizuku、Stellar 均无官方隶属关系。
 
-**当前版本：v0.3.3 Pre-release。** 下载、签名与校验信息见
-[版本说明](docs/releases/v0.3.3.md)，生命周期和页面状态改进见 [修复说明](docs/FIX_REVIEW_0.3.3.md)。
+**当前版本：v0.3.4 Pre-release。** 下载、签名与校验信息见
+[版本说明](docs/releases/v0.3.4.md)。
 本版官方 Shizuku、Stellar 原生、冷启动与异常恢复仍待手机验收；静态构建通过不能证明真实跳转。
 源码中的 `minSdk 26` 表示最低可安装 Android 8.0，不代表所有 ROM 都能接管。
 
@@ -38,7 +38,7 @@
 
 ## 使用步骤
 
-1. 从 [v0.3.3 Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.3) 下载 universal APK 安装，并安装一个可通用处理 HTTP 与 HTTPS 的目标浏览器。
+1. 从 [v0.3.4 Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.4) 下载 universal APK 安装，并安装一个可通用处理 HTTP 与 HTTPS 的目标浏览器。
 2. 从 [Shizuku 官方下载页](https://shizuku.rikka.app/zh-hans/download/)或
    [Stellar 上游 Releases](https://github.com/roro2239/Stellar/releases)安装管理器，按其指引启动服务。
    打开“岛外打开”，点“开启接管”时按提示授予所选后端权限；详见[首次配置](docs/wiki/Getting-Started.md)。

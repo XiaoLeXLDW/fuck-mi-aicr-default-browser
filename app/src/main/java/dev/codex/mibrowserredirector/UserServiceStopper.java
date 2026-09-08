@@ -275,7 +275,7 @@ final class UserServiceStopper {
 
         private Result timedOut() {
             return new Result(false, "停止未确认：总截止时间 " + timeoutMillis + " 毫秒已到（"
-                    + stage + "）；已发出的调用可能仍未结束，请等待工作线程释放后再操作");
+                    + stage + "）；已发出的调用可能仍未结束。稍后点“刷新状态”；如持续无响应，请在对应管理器中停止权限服务。");
         }
     }
 

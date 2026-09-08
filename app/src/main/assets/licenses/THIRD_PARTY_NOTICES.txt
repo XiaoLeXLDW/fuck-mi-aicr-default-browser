@@ -9,8 +9,8 @@
 `e22b3a0c76305c57a36696b069938d3c356a290b`。
 
 上游该提交的 README 声明：Stellar 修改部分为 MPL-2.0，继承 Shizuku 的部分保留 Apache-2.0。
-该提交没有根 LICENSE 文件，以下对应源码也没有逐文件版权头。这里保留其已声明的双重来源信息，
-不虚构版权姓名、年份或更细的继承边界，不将它们标为项目 MIT。
+该提交没有根 LICENSE 文件，以下对应源码也没有逐文件版权头，逐文件的版权人、年份和继承边界未明确。
+以下按上游声明保留 MPL-2.0 与 Apache-2.0 来源，不适用本项目 MIT。
 
 | 本地路径（相对于 app/src/main/） | 上游路径 | 本地改动 |
 |---|---|---|
@@ -38,9 +38,9 @@
 Maven 依赖：`dev.rikka.shizuku:api:13.1.5`、`dev.rikka.shizuku:provider:13.1.5`，以及其
 `aidl`、`shared` 传递模块。来源：[Shizuku-API](https://github.com/RikkaApps/Shizuku-API)。
 
-此前文档把官方 Shizuku-API 写成 Apache-2.0，现根据其
-[实际 LICENSE](https://github.com/RikkaApps/Shizuku-API/blob/a27f6e4151ba7b39965ca47edb2bf0aeed7102e5/LICENSE)
-更正为 **MIT，Copyright (c) 2021 RikkaW**。完整原文见 [Shizuku-API-MIT.txt](licenses/Shizuku-API-MIT.txt)。
+固定源码提交的
+[LICENSE](https://github.com/RikkaApps/Shizuku-API/blob/a27f6e4151ba7b39965ca47edb2bf0aeed7102e5/LICENSE)
+声明 **MIT，Copyright (c) 2021 RikkaW**。完整原文见 [Shizuku-API-MIT.txt](licenses/Shizuku-API-MIT.txt)。
 这与 Stellar 对其继承来源的声明分开记录。
 
 ## AOSP 隐藏接口 · Apache-2.0
@@ -60,7 +60,17 @@ Maven 依赖：`dev.rikka.shizuku:api:13.1.5`、`dev.rikka.shizuku:provider:13.1
 Android SDK、JDK、Gradle 完整发行包和本地缓存不纳入源码提交。
 `licenses/` 中原文取自 Apache、Mozilla 与上述固定 Shizuku-API 提交；应用 APK 也携带这些文本和本声明。
 
-## 图标
+## 图标与仓库视觉资源
 
-`app/src/main/res/drawable/ic_launcher.xml` 是本项目的 Android 矢量图标（橙底、白色转向箭头），
-按根 MIT 提供；不是 Xiaomi、Shizuku 或 Stellar 的官方品牌图标。
+当前图标使用黑白猫耳角色、青色浏览器窗口和金色跳出箭头。原画位于
+`docs/assets/branding/mascot-source.webp`，由 ImageGen 参考 XiaoLeXLDW 的
+VBAN Receiver for macOS 与 NAT Moe 图标生成。参考文件和固定源码版本见[品牌与资源](docs/BRANDING.md)。
+
+`scripts/build-branding.cjs` 从该原画导出仓库 PNG，以及
+`app/src/main/res/drawable-nodpi/launcher_foreground_image.png` 和 `brand_app_icon.png`。
+Android 自适应入口为 `mipmap-anydpi-v26/ic_launcher.xml` 与 `mipmap-anydpi-v33/ic_launcher.xml`；
+后者还使用本项目的 `drawable/ic_launcher_monochrome.xml` 猫耳、窗口与箭头单色矢量。
+上述 Android 相对路径均位于 `app/src/main/res/`。
+
+导出脚本与本项目矢量图代码采用根 MIT。当前仓库未对生成原画及其派生 PNG 单列图像许可证；
+参考项目素材保留各自权利，本声明不重新授权。当前资源不是 Xiaomi、Shizuku 或 Stellar 的官方品牌图标。

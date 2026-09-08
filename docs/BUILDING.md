@@ -1,9 +1,9 @@
 # 构建与签名
 
-下列输出名以当前版本 **v0.3.3（code 10 / 协议 200 / 服务代 30004）** 为例。
+下列输出名以当前版本 **v0.3.4（code 11 / 协议 200 / 服务代 30005）** 为例。
 `build.ps1` 从源码读取版本并生成文件名；最终以 `app/build.gradle`、`ServiceIdentity.java` 和
-构建日志为准，不要靠手动改 APK 文件名伪装升级。当前产物、校验值与验证范围见
-[构建证据](BUILD_EVIDENCE.md)和[版本说明](releases/v0.3.3.md)。
+构建日志为准。修改 APK 文件名不会改变包内版本或签名。当前产物、校验值与验证范围见
+[构建证据](BUILD_EVIDENCE.md)和[版本说明](releases/v0.3.4.md)。
 
 ## 工具版本
 
@@ -29,11 +29,11 @@
 脚本不安装 JDK。若 PowerShell 阻止脚本执行，可在当前终端使用
 `Set-ExecutionPolicy -Scope Process Bypass`，无需更改全局策略。
 
-按上述版本构建会输出 `dist/MiBrowserRedirector-debug-debug-signed-v0.3.3.apk` 和同名 `.sha256`。
+按上述版本构建会输出 `dist/MiBrowserRedirector-debug-debug-signed-v0.3.4.apk` 和同名 `.sha256`。
 新克隆会生成项目内 `.local/debug.keystore`，不同克隆的开发证书可能不同。
 
 ```powershell
-.\scripts\install.ps1 -Apk .\dist\MiBrowserRedirector-debug-debug-signed-v0.3.3.apk
+.\scripts\install.ps1 -Apk .\dist\MiBrowserRedirector-debug-debug-signed-v0.3.4.apk
 ```
 
 安装会操作 ADB 设备；多个设备时追加 `-Serial`。不能覆盖不同签名的现有安装，脚本不会自动卸载。
@@ -44,7 +44,7 @@
 .\scripts\build.ps1 -Variant Release
 ```
 
-无签名配置时输出 `dist/MiBrowserRedirector-release-unsigned-v0.3.3.apk`。这是可检查的构建产物，
+无签名配置时输出 `dist/MiBrowserRedirector-release-unsigned-v0.3.4.apk`。这是可检查的构建产物，
 **不能直接安装或当作已签名发行包**。每次构建脚本只为所选 Variant 执行单测、Lint，另做 UI 结构检查、
 Manifest/包名/版本检查，并按签名类型验证 APK；不会替代实机验收。
 
@@ -52,7 +52,7 @@ Manifest/包名/版本检查，并按签名类型验证 APK；不会替代实机
 |---|---|---|
 | Debug 默认 | `debug-signed` | 自行开发测试 |
 | Release 无签名配置 | `unsigned` | CI / 检查 / 后续签名 |
-| 四项发布环境变量齐全 | `signed` | 使用维护者提供的证书；工具不会替你证明它是正式证书 |
+| 四项发布环境变量齐全 | `signed` | 使用指定证书；证书来源与用途由维护者核验 |
 | `-LocalTestSigning` | `local-test` | 显式复用已有历史测试证书 |
 
 正式签名读取四个环境变量：`REDIRECTOR_KEYSTORE`（密钥路径）、`REDIRECTOR_STORE_PASSWORD`、
@@ -99,9 +99,12 @@ Debug / Release 单测同时依赖 `:app:testStellarLifecycle`：直接编译原
 .\tests\verify-stop.Tests.ps1
 .\tests\verify-stop-process.Tests.ps1
 .\tests\current-docs.Tests.ps1
+.\tests\export-wiki.Tests.ps1
 ```
 
-这些测试不连接设备。`verify-repository.ps1` 另检查当前版本/服务代文档。
+这些测试不连接设备，分别检查 ADB 辅助脚本、当前文档版本字段和 Wiki 链接转换。
+`verify-repository.ps1` 另检查兼容表的版本/code/协议/服务代及隐私页首段版本。
+版本字段检查不等于全部文案审核，也不核验远端发布信息；发布前仍需按实际行为校对说明。
 
 ```powershell
 .\scripts\verify-repository.ps1

@@ -1,12 +1,12 @@
 # 快速开始
 
-准备一台 Android 8.0 或更高版本的设备、可通用处理 HTTP 与 HTTPS 的第三方浏览器，以及已启动的 Shizuku 或 Stellar。Android 版本满足安装要求并不保证 ROM 可用，先阅读[兼容范围](Compatibility.md)。服务已启动时，首次配置约 2 分钟；首次配对另留 5–10 分钟。
+准备一台 Android 8.0 或更高版本的设备、可通用处理 HTTP 与 HTTPS 的小米浏览器以外的浏览器，以及已启动的 Shizuku 或 Stellar。Android 版本满足安装要求并不保证 ROM 可用，先阅读[兼容范围](Compatibility.md)。服务已启动时，首次配置约 2 分钟；首次配对另留 5–10 分钟。
 
 ## 官方来源与权限服务准备
 
 | 需要安装的内容 | 来源与说明 |
 | --- | --- |
-| 岛外打开 | [v0.3.3 Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.3)；选择 universal APK 并核对同名 SHA-256 文件，当前版本仍待手机验收 |
+| 岛外打开 | [v0.3.4 Pre-release](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.4)；选择 universal APK 并核对同名 SHA-256 文件，当前版本仍待手机验收 |
 | 官方 Shizuku | [官方下载页](https://shizuku.rikka.app/zh-hans/download/)与[用户手册](https://shizuku.rikka.app/zh-hans/guide/setup/)；不要从不明网盘下载改版 |
 | Stellar | [上游项目](https://github.com/roro2239/Stellar)与[上游 Releases](https://github.com/roro2239/Stellar/releases)；本应用页面称其为“兼容服务（原生 API）” |
 
@@ -31,7 +31,7 @@ Shizuku 在 Android 11 及以上可按官方手册通过无线调试配对启动
 
 | 所装版本 | 业务协议 / 服务代 | 验证边界 |
 | --- | --- | --- |
-| v0.3.3（code 10） | 200 / 30004 | 本版 Shizuku、Stellar、冷启动与异常恢复仍待手机验收 |
+| v0.3.4（code 11） | 200 / 30005 | 本版 Shizuku、Stellar、冷启动与异常恢复仍待手机验收 |
 
 若未弹窗或此前拒绝授权，在**当前选中的管理器**的应用授权列表中检查“岛外打开”，再回应用
 刷新并重试；不会自动换另一个后端绕过拒绝。本应用不会替你设置系统默认浏览器，也不会接管 WebView。

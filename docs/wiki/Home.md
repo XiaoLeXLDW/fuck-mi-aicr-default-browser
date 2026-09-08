@@ -2,7 +2,7 @@
 
 “岛外打开”（Mi Browser Redirector）将系统明确交给小米浏览器 `com.android.browser` 的可解析 HTTP/HTTPS 链接，转交给你选择的浏览器。主要面向 Xiaomi / HyperOS 的超级岛、超级小爱等调用入口，无需 Root，需启动并授权 Shizuku 或 Stellar。
 
-**当前版本为 v0.3.3 Pre-release，仍待本版手机验收。** 官方 Shizuku、Stellar 原生、冷启动、
+**当前版本为 v0.3.4 Pre-release，仍待本版手机验收。** 官方 Shizuku、Stellar 原生、冷启动、
 菜单视觉与异常恢复需分别验证，旧版本反馈和静态构建通过不能替代本版实机结果。
 
 本页是仓库内可维护的 Wiki 文档。当前通过源码仓库阅读这些页面，独立 GitHub Wiki 未启用。

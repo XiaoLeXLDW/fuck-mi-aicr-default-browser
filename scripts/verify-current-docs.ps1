@@ -27,5 +27,6 @@ if ($MyInvocation.InvocationName -ne '.') {
     }
     $issues = @(Find-CurrentDocIssues -Metadata $metadata -Documents $documents)
     if ($issues.Count) { throw ($issues -join "`n") }
-    Write-Host "PASS: current compatibility and privacy facts match v$($metadata.VersionName); history was not rewritten."
+    Write-Host "PASS: compatibility version/code/protocol/generation and privacy introduction versions match v$($metadata.VersionName)."
+    Write-Host 'These checks cover the named version fields; they do not replace a full content review or verify remote metadata.'
 }

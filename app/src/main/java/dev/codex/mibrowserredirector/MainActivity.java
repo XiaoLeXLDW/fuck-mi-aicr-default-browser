@@ -349,7 +349,7 @@ public final class MainActivity extends Activity {
         setButtonsEnabled(lifecycleState != LifecycleState.STARTING
                 && lifecycleState != LifecycleState.STOPPING);
         if (browsers.isEmpty()) {
-            eventText.setText("没有发现可处理 HTTPS 的第三方浏览器。请先安装浏览器，再点“刷新状态”。");
+            eventText.setText("未发现同时支持通用 HTTP 和 HTTPS 网页的可用浏览器。请安装小米浏览器以外的浏览器，再点“刷新状态”。");
         }
     }
 
@@ -391,7 +391,7 @@ public final class MainActivity extends Activity {
 
     private void requestDisable() {
         if (UserServiceStopper.hasPendingCalls()) {
-            showStatus("停止未确认：上一次系统调用仍未返回。页面已恢复，可稍后重试；必要时停止对应权限服务");
+            showStatus("停止未确认：上一次系统调用仍未返回，暂不能重新开启。稍后点“刷新状态”；如持续无响应，请在对应管理器中停止权限服务。");
             return;
         }
         if (isAnotherStopWorkerRunning()) {
@@ -426,7 +426,7 @@ public final class MainActivity extends Activity {
             if (!ownsOperation(epoch) || activityDestroyed
                     || (!pendingStop && lifecycleState != LifecycleState.STOPPING)) return;
             if (stopWorkerRunning) {
-                showStatus("停止未确认：总等待时间已到，正在结束有界清理；不会报告虚假成功");
+                showStatus("停止未确认：已等待 12 秒，清理尚未结束。暂不能重新开启；稍后点“刷新状态”查看进展。");
             } else {
                 finishOperationFailure("总等待时间已到（12 秒），保留原后端，稍后可再次停用");
             }
@@ -673,7 +673,7 @@ public final class MainActivity extends Activity {
         if (!matches) {
             session.rejectServiceCommands(binder);
             if (!beginGlobalStop(epoch)) {
-                finishOperationFailure("旧服务清理正在进行，请稍后重试");
+                finishOperationFailure("服务清理正在进行，请稍后重试");
                 return;
             }
             stopWorkerRunning = true;
@@ -682,9 +682,9 @@ public final class MainActivity extends Activity {
             lifecycleState = LifecycleState.STOPPING;
             setButtonsEnabled(false);
             String reason = failure == null
-                    ? "协议/服务代=" + protocol + "/" + serviceGeneration
-                    : failure;
-            showStatus("拒绝使用旧 UserService（" + reason + "），正在退出它…");
+                    ? "服务版本不兼容（协议/服务代=" + protocol + "/" + serviceGeneration + "）"
+                    : "服务身份读取失败：" + failure;
+            showStatus(reason + "\n已拒绝使用该 UserService，正在通过来源管理器请求清理…");
             stopSpecificService(candidate, binder, session, result -> {
                 stopWorkerRunning = false;
                 endGlobalStop(epoch);
@@ -692,7 +692,7 @@ public final class MainActivity extends Activity {
                 if (!result.stopped) {
                     preferences.edit().putBoolean(PREF_DESIRED_ENABLED, false).apply();
                     restoreFailedStop(candidate, binder, session);
-                    finishOperationFailure("旧 UserService 无法退出\n" + result.detail);
+                    finishOperationFailure("UserService 清理未确认\n" + result.detail);
                 } else if (!identityRetryAttempted) {
                     detachSession(session);
                     if (serviceSession == session) serviceSession = null;
@@ -700,7 +700,7 @@ public final class MainActivity extends Activity {
                     lifecycleState = LifecycleState.STARTING;
                     mainHandler.postDelayed(this::bindForPendingAction, 250L);
                 } else {
-                    finishOperationFailure("连续两次取得不兼容的 UserService，已停止重试");
+                    finishOperationFailure("连续两次未通过 UserService 身份验证，已停止重试");
                 }
             });
             return;
@@ -831,7 +831,7 @@ public final class MainActivity extends Activity {
         connectionToken++;
         lifecycleState = LifecycleState.STOPPING;
         setButtonsEnabled(false);
-        showStatus("停止第 2/3 步：正在注销全局 Activity Controller…");
+        showStatus("停止第 2/3 步：正在请求停止服务并确认退出…");
         stopSpecificService(service, binder, stopSession, result -> {
             stopWorkerRunning = false;
             if (!ownsOperation(epoch)) {
@@ -939,7 +939,7 @@ public final class MainActivity extends Activity {
         if (!backend.available()) {
             finishOperationFailure(backend.id().displayName() + (pendingStop
                     ? " 未运行；已记住“停止”状态，但目前无法核验残留进程"
-                    : " 未运行。请先在对应管理器中通过无线调试启动服务，然后重新开启。"));
+                    : " 未运行。请打开对应管理器，按其启动指引启动服务，再回到本页点“开启接管”。"));
             return false;
         }
         if (backend.authorized()) return true;
@@ -1006,7 +1006,7 @@ public final class MainActivity extends Activity {
         if (activityDestroyed) return;
         if (UserServiceStopper.hasPendingCalls() && !stopWorkerRunning && GLOBAL_STOP_EPOCH.get() == 0) {
             lifecycleState = LifecycleState.ERROR;
-            showStatus("停止未确认：系统调用仍未返回。暂不允许重新开启；稍后点刷新或停用重试");
+            showStatus("停止未确认：系统调用仍未返回，暂不能重新开启。稍后点“刷新状态”；如持续无响应，请在对应管理器中停止权限服务。");
             setButtonsEnabled(true);
             return;
         }
@@ -1147,8 +1147,8 @@ public final class MainActivity extends Activity {
                 + "控制器 " + ServiceIdentity.BUILD_LABEL + "：已停止\n"
                 + "停止状态不会自动创建或重连 UserService");
         if (!activityDestroyed) {
-            eventText.setText("选择后端后点“开启接管”。切换后端前必须先停用，"
-                    + "停止按钮会等待 Binder 死亡再报告成功。");
+            eventText.setText("选择权限后端和目标浏览器后，点“开启接管”。切换权限后端前，先点“停用并退出服务”，"
+                    + "等待“停止完成”。");
         }
         setButtonsEnabled(true);
     }
