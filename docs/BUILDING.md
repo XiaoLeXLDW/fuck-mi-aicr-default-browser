@@ -2,8 +2,8 @@
 
 下列输出名以当前版本 **v0.3.4（code 11 / 协议 200 / 服务代 30005）** 为例。
 `build.ps1` 从源码读取版本并生成文件名；最终以 `app/build.gradle`、`ServiceIdentity.java` 和
-构建日志为准。修改 APK 文件名不会改变包内版本或签名。当前产物、校验值与验证范围见
-[构建证据](BUILD_EVIDENCE.md)和[版本说明](releases/v0.3.4.md)。
+构建日志为准。修改 APK 文件名不会改变包内版本或签名。当前产物、校验值与 CI 信息见
+[版本说明](releases/v0.3.4.md)。
 
 ## 工具版本
 
@@ -46,7 +46,7 @@
 
 无签名配置时输出 `dist/MiBrowserRedirector-release-unsigned-v0.3.4.apk`。这是可检查的构建产物，
 **不能直接安装或当作已签名发行包**。每次构建脚本只为所选 Variant 执行单测、Lint，另做 UI 结构检查、
-Manifest/包名/版本检查，并按签名类型验证 APK；不会替代实机验收。
+Manifest/包名/版本检查，并按签名类型验证 APK。
 
 | 配置 | 输出标签 | 用途 |
 |---|---|---|
@@ -67,8 +67,7 @@ Manifest/包名/版本检查，并按签名类型验证 APK；不会替代实机
 ```
 
 此模式要求已有 `keys/redirector-test.jks`，不会生成替代密钥，输出标签为 `local-test`。
-历史测试口令不是正式发布凭据。既有 `dist/MiBrowserRedirector-release-v*.apk` 保留为历史产物，
-新脚本使用带签名类型的文件名。切换正式证书前需考虑升级连续性；包名相同也不能直接跨证书覆盖。
+切换正式证书前需考虑升级连续性；包名相同也不能直接跨证书覆盖。
 
 ## Linux / macOS / Android Studio
 
@@ -91,7 +90,7 @@ Windows `bootstrap.ps1` / `build.ps1` / ADB 辅助脚本依赖 `.bat` / `.exe` �
 
 Debug / Release 单测同时依赖 `:app:testStellarLifecycle`：直接编译原生会话生产源码，
 使用只在测试目录内的 Android/管理器替身。测试替身不进入 APK。报告位于
-`app/build/test-results/testStellarLifecycle/`；它不能替代真实设备验证。
+`app/build/test-results/testStellarLifecycle/`。
 
 离线辅助脚本回归：
 
@@ -104,7 +103,6 @@ Debug / Release 单测同时依赖 `:app:testStellarLifecycle`：直接编译原
 
 这些测试不连接设备，分别检查 ADB 辅助脚本、当前文档版本字段和 Wiki 链接转换。
 `verify-repository.ps1` 另检查兼容表的版本/code/协议/服务代及隐私页首段版本。
-版本字段检查不等于全部文案审核，也不核验远端发布信息；发布前仍需按实际行为校对说明。
 
 ```powershell
 .\scripts\verify-repository.ps1
@@ -116,7 +114,7 @@ GitHub Actions 的 [android.yml](../.github/workflows/android.yml) 同时执行 
 Lint 和构建，上传 `app-debug.apk`（开发签名，可安装测试）、`app-release-unsigned.apk`
 （未签名，不可直接安装）及 `app/build/reports/`，构建附件保留 14 天。开发证书不是发行证书，
 也不保证跨 CI 运行或本机安装可覆盖；当前工作流没有发行密钥、自动 Release 或 Wiki 发布步骤。
-当前版本的本地结果与实际远端 CI 状态分别记录在[构建证据](BUILD_EVIDENCE.md)。
+当前版本的校验与 CI 信息见[版本说明](releases/v0.3.4.md)。
 真机脚本会操作手机，执行前阅读[实机验收](实机验收.md)。
 
 修改根许可证或第三方声明后，同步 `app/src/main/assets/licenses/` 对应文本；仓库检查会检查副本一致性。

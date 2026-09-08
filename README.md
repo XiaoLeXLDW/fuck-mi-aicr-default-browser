@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/branding/app-icon.png" width="112" height="112" alt="岛外打开：黑白猫娘与浏览器跳出箭头图标">
+  <img src="app/src/main/res/drawable-nodpi/brand_app_icon.png" width="112" height="112" alt="岛外打开 App 图标">
 </p>
 
 # 岛外打开 · Mi Browser Redirector
@@ -17,13 +17,11 @@
 
 **当前版本：v0.3.4 Pre-release。** 下载、签名与校验信息见
 [版本说明](docs/releases/v0.3.4.md)。
-本版官方 Shizuku、Stellar 原生、冷启动与异常恢复仍待手机验收；静态构建通过不能证明真实跳转。
+本版官方 Shizuku、Stellar 原生、冷启动与异常恢复仍待手机验收。
 源码中的 `minSdk 26` 表示最低可安装 Android 8.0，不代表所有 ROM 都能接管。
 
 [快速开始](docs/wiki/Getting-Started.md) · [Wiki](docs/wiki/Home.md) ·
 [兼容说明](docs/SHIZUKU_COMPATIBILITY.md) · [构建](docs/BUILDING.md) · [更新记录](CHANGELOG.md)
-
-![岛外打开家族化视觉：黑白猫娘、青色浏览器与金色跳出箭头](docs/assets/branding/readme-hero.png)
 
 ## 能做什么
 
@@ -48,7 +46,7 @@
 
 当前 universal APK 沿用历史测试证书，附带 SHA-256 校验文件。安装更新需要**包名与签名兼容**；
 未来若改用正式证书，需另行处理升级关系。
-保留现有安装前先看[构建与签名说明](docs/BUILDING.md)。首次无线调试配对另需时间。
+安装更新前先看[构建与签名说明](docs/BUILDING.md)。
 
 ## 兼容情况
 
@@ -88,8 +86,8 @@ Windows + PowerShell 7 + JDK 17，工具和缓存保存在项目内：
 首次构建需要联网下载 Android SDK、Gradle 和 Maven 依赖。Debug APK 可供自行测试；
 Release 默认输出未签名包。跨平台 Wrapper 命令、正式签名和本地测试签名均见
 [BUILDING.md](docs/BUILDING.md)。CI 同时检查 Debug / Release，上传开发签名 Debug APK、
-未签名 Release APK 和报告，不持有发行密钥、不自动发布。当前版本的本地及远端验证状态见
-[构建证据](docs/BUILD_EVIDENCE.md)。
+未签名 Release APK 和报告，不持有发行密钥、不自动发布。当前版本的校验与 CI 信息见
+[版本说明](docs/releases/v0.3.4.md)。
 
 ## 项目导航
 
@@ -97,7 +95,6 @@ Release 默认输出未签名包。跨平台 Wrapper 命令、正式签名和本
 |---|---|
 | 使用、排障、工作原理 | [Wiki 首页](docs/wiki/Home.md) |
 | 完整文档索引 | [docs/README.md](docs/README.md) |
-| 图标、仓库封面与家族视觉规范 | [品牌与资源](docs/BRANDING.md) |
 | GitHub 推送、Wiki 发布与 Release | [发布指南](docs/GITHUB_RELEASE_CHECKLIST.md) |
 | 问题反馈与代码贡献 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | 安全问题与隐私 | [SECURITY.md](SECURITY.md) · [PRIVACY.md](docs/PRIVACY.md) |

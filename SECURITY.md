@@ -14,5 +14,5 @@
 控制器能够接收系统 Activity 事件，当前实现仅尝试处理 `com.android.browser` 的网页启动。
 全局控制器冲突、目标浏览器启动失败和 ROM 限制详见 [README](README.md)。
 
-源码没有实现遥测或上传服务；普通 App 的网络权限与特权进程能力不能混为一谈。
+应用没有遥测或上传功能；UserService 以 shell/root 身份运行，不受普通 App 网络权限的限制。
 数据处理和系统日志边界见[隐私说明](docs/PRIVACY.md)。

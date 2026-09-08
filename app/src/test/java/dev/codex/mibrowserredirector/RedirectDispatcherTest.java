@@ -235,7 +235,13 @@ public class RedirectDispatcherTest {
         RedirectDispatcher dispatcher = dispatcher(8, launch(false));
         RedirectDispatcher.Snapshot old = dispatcher.snapshot();
         String[] message = {"initial"};
-        dispatcher.tryRecord(old, () -> message[0] = "current diagnostic");
+        // Diagnostic publication may skip a busy gate; allow the idle worker to release it.
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        do {
+            dispatcher.tryRecord(old, () -> message[0] = "current diagnostic");
+            if (!message[0].equals("initial")) break;
+            Thread.sleep(1);
+        } while (System.nanoTime() < deadline);
         assertEquals("current diagnostic", message[0]);
         dispatcher.disable(); message[0] = "disabled";
         dispatcher.tryRecord(old, () -> message[0] = "stale callback");

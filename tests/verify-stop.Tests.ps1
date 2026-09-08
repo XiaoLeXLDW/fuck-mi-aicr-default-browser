@@ -106,7 +106,6 @@ function New-Fixture([string]$Scenario = 'BothAlive', [string]$Choice = 'Auto') 
 
 function Invoke-Fixture($Fixture) {
     # Execute the actual workflow, replacing only external tool/time boundaries.
-    # The legacy path supported the original RED before Invoke-AdbProcess existed.
     $tokens = $null; $parseErrors = $null
     $ast = [Management.Automation.Language.Parser]::ParseInput($source, [ref]$tokens, [ref]$parseErrors)
     if ($parseErrors.Count) { throw 'Production script parse failed.' }
@@ -124,12 +123,7 @@ function Invoke-Fixture($Fixture) {
     $workflow += "`n" + $source.Substring($tailOffset)
     $transport = $Fixture.Transport
     $fixtureState = $Fixture.State
-    $adb = {
-        $response = & $transport -Arguments @($args) -TimeoutMilliseconds 1000
-        $global:LASTEXITCODE = $response.ExitCode
-        $response.Output
-    }.GetNewClosure()
-    if ($functions.Name -contains 'Invoke-AdbProcess') { $adb = $ScriptPath } # Only Test-Path observes this; NEVER executed.
+    $adb = $ScriptPath # Only Test-Path observes this; never executed.
     $deviceArgs = @(); $SkipInstall = $fixtureState.Scenario -notin @('InvalidSignature', 'ValidSignature')
     $Backend = $fixtureState.Choice
     $Serial = if ($fixtureState.Scenario -eq 'WrongSerial') { 'unknown-private-device' } else { $null }

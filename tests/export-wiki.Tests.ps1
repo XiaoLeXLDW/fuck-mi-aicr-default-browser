@@ -58,7 +58,7 @@ function Test-Case([string]$Name, [scriptblock]$Action) {
 
 $originalArchitecture = @'
 # 架构
-[v0.3.3 修复记录](../FIX_REVIEW_0.3.3.md)
+[协议说明](../protocol-notes.md)
 [首页](Home.md#start)
 [`代码标签`](./Home.md?view=1#part)
 [中文页面](<中文 页面.md> "页面标题")
@@ -84,7 +84,7 @@ $originalArchitecture = @'
 Write-Fixture 'docs/wiki/Architecture.md' $originalArchitecture
 Write-Fixture 'docs/wiki/Home.md' '# Home'
 Write-Fixture 'docs/wiki/中文 页面.md' '# 中文页面'
-Write-Fixture 'docs/FIX_REVIEW_0.3.3.md' '# Fix review'
+Write-Fixture 'docs/protocol-notes.md' '# Protocol notes'
 Write-Fixture 'docs/中文 说明.md' '# 中文说明'
 Write-Fixture 'docs/notes with spaces.md' '# Notes'
 Invoke-FixtureGit @('-c', 'init.defaultBranch=main', 'init', '--quiet') | Out-Null
@@ -99,8 +99,8 @@ $githubOptions = @('-Repository', 'example/wiki-project')
 $githubExport = Invoke-Export $githubOptions
 $githubBody = [IO.File]::ReadAllText((Join-Path $githubExport 'Architecture.md'))
 
-Test-Case 'cross-directory review link points to the complete HEAD commit' {
-    Assert-Contains $githubBody "[v0.3.3 修复记录](https://github.com/example/wiki-project/blob/$headRevision/docs/FIX_REVIEW_0.3.3.md)"
+Test-Case 'cross-directory repository link points to the complete HEAD commit' {
+    Assert-Contains $githubBody "[协议说明](https://github.com/example/wiki-project/blob/$headRevision/docs/protocol-notes.md)"
 }
 Test-Case 'sibling Wiki links retain fragments, queries and code labels' {
     Assert-Contains $githubBody '[首页](https://github.com/example/wiki-project/wiki/Home#start)'
@@ -124,16 +124,16 @@ Test-Case 'preview links resolve to real source files relative to the export dir
     $previewExport = Invoke-Export
     $previewBody = [IO.File]::ReadAllText((Join-Path $previewExport 'Architecture.md'))
     Assert-Contains $previewBody '[首页](Home.md#start)'
-    Assert-Contains $previewBody '[v0.3.3 修复记录](../../docs/FIX_REVIEW_0.3.3.md)'
+    Assert-Contains $previewBody '[协议说明](../../docs/protocol-notes.md)'
     Assert-Contains $previewBody '[说明](<../../docs/%E4%B8%AD%E6%96%87%20%E8%AF%B4%E6%98%8E.md?view=1#检查> "保留标题")'
-    foreach ($target in @('Home.md', '../../docs/FIX_REVIEW_0.3.3.md', '../../docs/中文 说明.md', '../../docs/notes with spaces.md')) {
+    foreach ($target in @('Home.md', '../../docs/protocol-notes.md', '../../docs/中文 说明.md', '../../docs/notes with spaces.md')) {
         Assert-True (Test-Path -LiteralPath (Join-Path $previewExport $target) -PathType Leaf) "Broken preview target: $target"
     }
 }
 Test-Case 'SourceRevision resolves an older revision to its full commit ID' {
     $explicitExport = Invoke-Export ($githubOptions + @('-SourceRevision', 'HEAD^'))
     $explicitBody = [IO.File]::ReadAllText((Join-Path $explicitExport 'Architecture.md'))
-    Assert-Contains $explicitBody "/blob/$firstRevision/docs/FIX_REVIEW_0.3.3.md"
+    Assert-Contains $explicitBody "/blob/$firstRevision/docs/protocol-notes.md"
     Assert-True (-not $explicitBody.Contains("/blob/$headRevision/")) 'Explicit revision was ignored.'
 }
 Test-Case 'invalid SourceRevision fails without creating output' {
@@ -141,7 +141,7 @@ Test-Case 'invalid SourceRevision fails without creating output' {
     Assert-True (-not (Test-Path -LiteralPath $failedExport)) 'Invalid revision created output.'
 }
 Test-Case 'SourceRevision must identify a commit, not a blob' {
-    $failedExport = Invoke-Export ($githubOptions + @('-SourceRevision', 'HEAD:docs/FIX_REVIEW_0.3.3.md')) 'SourceRevision does not resolve to a Git commit'
+    $failedExport = Invoke-Export ($githubOptions + @('-SourceRevision', 'HEAD:docs/protocol-notes.md')) 'SourceRevision does not resolve to a Git commit'
     Assert-True (-not (Test-Path -LiteralPath $failedExport)) 'Non-commit revision created output.'
 }
 Test-Case 'missing Wiki page fails before any pages are written' {

@@ -1,4 +1,4 @@
-param([switch]$LegacyRed, [switch]$CompileService)
+param([switch]$CompileService)
 # Scoped JUnit loop: no Gradle, Android device, network, or shared output directory.
 $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -6,22 +6,17 @@ $dependencyRoot = Join-Path $projectRoot '.gradle-user-home/caches/modules-2/fil
 $junit = Get-ChildItem (Join-Path $dependencyRoot 'junit/junit/4.13.2') -Recurse -Filter 'junit-4.13.2.jar' | Select-Object -First 1
 $hamcrest = Get-ChildItem (Join-Path $dependencyRoot 'org.hamcrest/hamcrest-core/1.3') -Recurse -Filter 'hamcrest-core-1.3.jar' | Select-Object -First 1
 if (-not $junit -or -not $hamcrest) { throw 'Project-local JUnit dependencies are missing.' }
-$output = Join-Path $projectRoot ('app/build/redirect-runtime-tests/' + $(if ($LegacyRed) { 'legacy' } else { 'current' }))
+$output = Join-Path $projectRoot 'app/build/redirect-runtime-tests/current'
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 $classpath = $junit.FullName + [IO.Path]::PathSeparator + $hamcrest.FullName
-if ($LegacyRed) {
-    $sources = @(Join-Path $PSScriptRoot 'redirector-harness/LegacyRedirectPatternsTest.java')
-    $tests = @('dev.codex.mibrowserredirector.LegacyRedirectPatternsTest')
-} else {
-    $sources = @('RedirectDispatcher', 'AmProcessLauncher') | ForEach-Object { Join-Path $projectRoot "app/src/main/java/dev/codex/mibrowserredirector/$_.java" }
-    $sources += @('RedirectDispatcherTest', 'AmProcessLauncherTest') | ForEach-Object { Join-Path $projectRoot "app/src/test/java/dev/codex/mibrowserredirector/$_.java" }
-    $tests = @('dev.codex.mibrowserredirector.RedirectDispatcherTest', 'dev.codex.mibrowserredirector.AmProcessLauncherTest')
-}
+$sources = @('RedirectDispatcher', 'AmProcessLauncher') | ForEach-Object { Join-Path $projectRoot "app/src/main/java/dev/codex/mibrowserredirector/$_.java" }
+$sources += @('RedirectDispatcherTest', 'AmProcessLauncherTest') | ForEach-Object { Join-Path $projectRoot "app/src/test/java/dev/codex/mibrowserredirector/$_.java" }
+$tests = @('dev.codex.mibrowserredirector.RedirectDispatcherTest', 'dev.codex.mibrowserredirector.AmProcessLauncherTest')
 & javac --release 17 -encoding UTF-8 -cp $classpath -d $output @sources
 if ($LASTEXITCODE -ne 0) { throw 'Redirect runtime test compilation failed.' }
 & java -cp ($output + [IO.Path]::PathSeparator + $classpath) org.junit.runner.JUnitCore @tests
-if ($LASTEXITCODE -ne 0) { throw $(if ($LegacyRed) { 'Historical simulation is RED (expected): not a real-device result.' } else { 'Redirect runtime regression is RED.' }) }
-if ($CompileService -and -not $LegacyRed) {
+if ($LASTEXITCODE -ne 0) { throw 'Redirect runtime regression failed.' }
+if ($CompileService) {
     # Compile only our production integration against existing generated AIDL.
     # Never invoke Gradle or regenerate/write its shared outputs.
     $androidJar = Join-Path $projectRoot '.tools/android-sdk/platforms/android-35/android.jar'

@@ -60,17 +60,11 @@ Maven 依赖：`dev.rikka.shizuku:api:13.1.5`、`dev.rikka.shizuku:provider:13.1
 Android SDK、JDK、Gradle 完整发行包和本地缓存不纳入源码提交。
 `licenses/` 中原文取自 Apache、Mozilla 与上述固定 Shizuku-API 提交；应用 APK 也携带这些文本和本声明。
 
-## 图标与仓库视觉资源
+## 应用图标
 
-当前图标使用黑白猫耳角色、青色浏览器窗口和金色跳出箭头。原画位于
-`docs/assets/branding/mascot-source.webp`，由 ImageGen 参考 XiaoLeXLDW 的
-VBAN Receiver for macOS 与 NAT Moe 图标生成。参考文件和固定源码版本见[品牌与资源](docs/BRANDING.md)。
+编译使用的 PNG 位于 `app/src/main/res/drawable-nodpi/`，自适应图标入口位于
+`mipmap-anydpi-v26/` 和 `mipmap-anydpi-v33/`，单色图标为 `drawable/ic_launcher_monochrome.xml`。
+后三项路径均相对于 `app/src/main/res/`。
 
-`scripts/build-branding.cjs` 从该原画导出仓库 PNG，以及
-`app/src/main/res/drawable-nodpi/launcher_foreground_image.png` 和 `brand_app_icon.png`。
-Android 自适应入口为 `mipmap-anydpi-v26/ic_launcher.xml` 与 `mipmap-anydpi-v33/ic_launcher.xml`；
-后者还使用本项目的 `drawable/ic_launcher_monochrome.xml` 猫耳、窗口与箭头单色矢量。
-上述 Android 相对路径均位于 `app/src/main/res/`。
-
-导出脚本与本项目矢量图代码采用根 MIT。当前仓库未对生成原画及其派生 PNG 单列图像许可证；
-参考项目素材保留各自权利，本声明不重新授权。当前资源不是 Xiaomi、Shizuku 或 Stellar 的官方品牌图标。
+PNG 为 AI 辅助制作的应用素材，未单列图像许可证；本项目的图标 XML 与矢量代码采用根 MIT。
+图标不是 Xiaomi、Shizuku 或 Stellar 的官方品牌标识。上游及参考素材的权利不由本声明重新授权。

@@ -2,7 +2,7 @@
 
 项目使用 Java 17、Android SDK 35 和 Gradle Wrapper 8.9，应用模块为 `app`，隐藏系统接口只在
 `hidden-api-stub` 提供编译桩。本文面向 v0.3.4（code 11 / 协议 200 / 服务代 30005），
-应用 ID 为 `dev.codex.mibrowserredirector`。最终版本字段以源码和本版构建记录为准。
+应用 ID 为 `dev.codex.mibrowserredirector`。
 
 ## 获取与构建
 
@@ -35,20 +35,16 @@ Release 默认未签名；安装测试推荐构建 Debug，新克隆会生成项
 
 本地测试覆盖 URL 解析、浏览器选择/资格判断、后端选择/归属、停止、独立任务通道、跳转调度和
 子进程清理；Lint 和 Manifest 检查提供静态证据。这些检查不能验证目标 ROM 的隐藏 API、权限
-授权界面、真实超级岛链接、页面视觉与停止后的系统行为。测试总数与是否执行、缓存复用均按
-当次构建报告记录，不把旧版本的通过结果当作当前版本结果。
+授权界面、真实超级岛链接、页面视觉与停止后的系统行为。
 
 GitHub `Android checks` 同时运行 Debug / Release 单测、Lint 和 APK 构建，上传开发签名
 `app-debug.apk`、未签名 `app-release-unsigned.apk` 及报告，保留 14 天；不使用发行密钥，
 不自动创建 Release 或发布 Wiki。开发 APK 可安装测试，但不保证与已有发行安装签名相容。
 
-修改权限或生命周期后，分别执行官方 Shizuku、Stellar 原生与双管理器场景；修改 UI 后执行大字体、横屏/折叠与 TalkBack 场景。结果分别记录在[实机验收清单](../实机验收.md)和[构建证据](../BUILD_EVIDENCE.md)。
-
-v0.3.4 的官方 Shizuku、Stellar 原生、冷启动与异常恢复仍需手机验收。
+修改权限或生命周期后，分别执行官方 Shizuku、Stellar 原生与双管理器场景；修改 UI 后执行大字体、横屏/折叠与 TalkBack 场景。设备测试步骤见[实机验收清单](../实机验收.md)，当前版本的校验与 CI 信息见[版本说明](../releases/v0.3.4.md)。
 
 离线文档回归入口为 `tests/current-docs.Tests.ps1` 与 `tests/export-wiki.Tests.ps1`，分别验证
-版本字段检查和 Wiki 链接转换。版本字段检查只覆盖兼容表与隐私页首段，不能替代完整文案
-审核或远端发布核验。
+版本字段检查和 Wiki 链接转换。
 
 ## 文档与提交
 

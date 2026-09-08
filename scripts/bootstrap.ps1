@@ -70,5 +70,5 @@ if (-not $SkipSdkPackages) {
 }
 
 Write-Host "Bootstrap complete. SDK: $sdkRoot"
-Write-Host 'Gradle: pinned 8.9 Wrapper. No release or historical test signing key was created.'
+Write-Host 'Gradle: pinned 8.9 Wrapper. No signing key was created.'
 Write-Host 'Build an installable development APK: .\scripts\build.ps1 -Variant Debug'
