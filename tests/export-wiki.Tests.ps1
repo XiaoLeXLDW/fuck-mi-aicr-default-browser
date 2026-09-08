@@ -13,6 +13,19 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'scripts/export-wiki.ps1') -Desti
 function Write-Fixture([string]$Path, [string]$Body) {
     [IO.File]::WriteAllText((Join-Path $fixtureRoot $Path), $Body, [Text.UTF8Encoding]::new($false))
 }
+# Compare actual exception messages, not host-formatted errors whose line wrapping
+# differs between Windows and Linux CI paths and terminal widths.
+Write-Fixture 'scripts/invoke-export.ps1' @'
+param([string]$Repository, [string]$OutputDirectory, [string]$SourceRevision, [switch]$Force)
+$ErrorActionPreference = 'Stop'
+try {
+    & (Join-Path $PSScriptRoot 'export-wiki.ps1') @PSBoundParameters
+    exit 0
+} catch {
+    [Console]::Error.WriteLine($_.Exception.GetBaseException().Message)
+    exit 1
+}
+'@
 function Invoke-FixtureGit([string[]]$Arguments) {
     $output = @(& git -C $fixtureRoot -c user.name=WikiExportTests -c user.email=wiki-export@example.invalid -c commit.gpgsign=false -c core.hooksPath=.no-hooks @Arguments 2>&1)
     if ($LASTEXITCODE -ne 0) { throw "Fixture git failed: $($output -join "`n")" }
@@ -27,7 +40,7 @@ function Assert-Contains([string]$Body, [string]$Expected) {
 function Invoke-Export([string[]]$Options = @(), [string]$ExpectedError, [string]$OutputDirectory) {
     $script:exportCount++
     if (-not $OutputDirectory) { $OutputDirectory = ".local/export-$script:exportCount" }
-    $output = @(& $powerShell -NoLogo -NoProfile -File (Join-Path $fixtureRoot 'scripts/export-wiki.ps1') -OutputDirectory $OutputDirectory @Options 2>&1)
+    $output = @(& $powerShell -NoLogo -NoProfile -File (Join-Path $fixtureRoot 'scripts/invoke-export.ps1') -OutputDirectory $OutputDirectory @Options 2>&1)
     $exitCode = $LASTEXITCODE
     if ($ExpectedError) {
         Assert-True ($exitCode -ne 0) "Expected export failure: $ExpectedError"
@@ -178,3 +191,5 @@ Test-Case 'existing pages still require explicit Force to overwrite' {
     $null = Invoke-Export $githubOptions 'Export would overwrite a page' $relativeOutput
 }
 Write-Host "GREEN: $testCount Wiki export checks; real-script fixtures retained at $testRoot. No network or device access."
+# Expected child failures are assertions, not this test script's final status.
+exit 0
