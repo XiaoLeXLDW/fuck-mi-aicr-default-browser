@@ -11,8 +11,8 @@
 [问题反馈](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/issues) ·
 [自动构建](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/actions/workflows/android.yml)
 
-**当前版本：v0.3.5 Pre-release。** 这是面向 Xiaomi / HyperOS 的实验性 Android 工具，
-本版官方 Shizuku、Stellar 原生、冷启动与异常恢复仍待手机验收。
+**当前版本：v0.3.5 正式版。** 面向 Xiaomi / HyperOS 的 Android 工具。
+已在小米 17 Ultra、系统 `3.0.309.0.WPACNXM.C11`、Stellar 环境下测试成功。
 最低安装版本为 Android 8.0（minSdk 26），不代表所有机型和 ROM 都能接管。
 
 应用通过 **Shizuku 或 Stellar** 提供的特权服务观察网页启动请求，支持 ADB 启动权限服务，

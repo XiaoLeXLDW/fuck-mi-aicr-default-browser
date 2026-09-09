@@ -2,9 +2,11 @@
 
 [当前版本与下载](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/releases/tag/v0.3.5)。发布正文只维护 GitHub Release，这里保留简要历史。
 
-## 0.3.5 · Pre-release（2026-09-09）
+## 0.3.5 · 正式版（2026-09-09）
 
 跟随系统切换浅色/深色，默认折叠诊断信息并精简文档，统一测试入口、改善停止验收。
+
+已在小米 17 Ultra、系统 `3.0.309.0.WPACNXM.C11`、Stellar 环境下测试成功。
 
 ## 0.3.4 · Pre-release（2026-09-08）
 

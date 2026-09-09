@@ -1,7 +1,7 @@
 # 常见问题
 
-基本使用步骤见[README](../README.md)。本页面向 v0.3.5 Pre-release，官方 Shizuku、Stellar
-原生、双管理器、冷启动、异常恢复及当前界面的手机验收仍待完成；静态检查通过不代表 ROM 兼容。
+基本使用步骤见[README](../README.md)。本页面向 v0.3.5 正式版。
+已在小米 17 Ultra、系统 `3.0.309.0.WPACNXM.C11`、Stellar 环境下测试成功。
 
 ## 权限服务怎么启动和授权
 
@@ -33,8 +33,8 @@ Stellar 的 Shizuku 兼容层不等于只使用 Stellar AIDL 的旧客户端也�
 | 范围 | 当前边界 |
 | --- | --- |
 | Android / ROM | minSdk 26，即 Android 8.0；targetSdk / compileSdk 35。ROM 必须允许隐藏接口 `setActivityController` 和 `SET_ACTIVITY_WATCHER`，满足安装版本不等于可接管 |
-| 官方 Shizuku | 官方 API / Provider `13.1.5`；独立授权与 UserService 已实现，本版真机待验 |
-| Stellar | 原生授权、Binder、token UserService 已实现，本版真机待验 |
+| 官方 Shizuku | 官方 API / Provider `13.1.5`；支持独立授权与 UserService |
+| Stellar | 小米 17 Ultra、系统 `3.0.309.0.WPACNXM.C11` 实机测试成功 |
 | Sui / 其他 ROM | 未测试，不作兼容承诺 |
 | 工作资料 / 系统分身 | 目标启动使用 `--user current`，没有原请求用户身份，不承诺跨用户接管 |
 

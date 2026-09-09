@@ -1,7 +1,7 @@
 # 参与贡献
 
 先阅读 [README](README.md)、[工作原理](docs/BUILDING.md#架构) 和
-[构建说明](docs/BUILDING.md)。当前为实验项目，兼容报告应明确 App、ROM 和管理器版本。
+[构建说明](docs/BUILDING.md)。兼容报告应明确 App、ROM 和管理器版本。
 
 ## 报告问题
 
