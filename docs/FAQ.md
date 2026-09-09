@@ -15,8 +15,15 @@
 按提示授权；Stellar 原生路径申请 `stellar` 基础权限，不需要额外开启跟随启动或无障碍。
 
 若没有弹窗或此前拒绝授权，在**当前选中的管理器**授权列表中检查“岛外打开”，然后刷新并重试。
-应用不会静默换另一后端绕过拒绝。展开“诊断信息”可查看与所装 APK 一致的版本、协议、服务代和 UID/PID；
+应用不会静默换另一后端绕过拒绝。反馈问题时可展开“诊断信息”查看服务详情。
+
+<details>
+<summary>技术细节：服务身份</summary>
+
+诊断信息包含与所装 APK 一致的版本、协议、服务代和 UID/PID。
 v0.3.5（code 12）对应协议 `200`、服务代 `30006`。“服务 API 103”等值来自管理器，不是业务协议。
+
+</details>
 
 ## 两个管理器能同时开吗
 
@@ -32,11 +39,21 @@ Stellar 的 Shizuku 兼容层不等于只使用 Stellar AIDL 的旧客户端也�
 
 | 范围 | 当前边界 |
 | --- | --- |
-| Android / ROM | minSdk 26，即 Android 8.0；targetSdk / compileSdk 35。ROM 必须允许隐藏接口 `setActivityController` 和 `SET_ACTIVITY_WATCHER`，满足安装版本不等于可接管 |
-| 官方 Shizuku | 官方 API / Provider `13.1.5`；支持独立授权与 UserService |
+| Android / ROM | Android 8.0 及以上；能安装不等于系统允许接管 |
+| 官方 Shizuku | 已实现独立授权与 UserService；本版独立真机测试结果尚未记录 |
 | Stellar | 小米 17 Ultra、系统 `3.0.309.0.WPACNXM.C11` 实机测试成功 |
 | Sui / 其他 ROM | 未测试，不作兼容承诺 |
-| 工作资料 / 系统分身 | 目标启动使用 `--user current`，没有原请求用户身份，不承诺跨用户接管 |
+| 工作资料 / 系统分身 | 不承诺跨用户接管 |
+
+只接管交给小米浏览器、能提取到网页地址的链接，不修改系统默认浏览器，也不处理应用内嵌网页。
+不要同时运行 `am monitor`、Monkey 或其他 Activity Controller 工具，以免接管冲突。
+
+<details>
+<summary>技术细节：兼容接口与网址解析</summary>
+
+minSdk 为 26，targetSdk / compileSdk 为 35。ROM 必须允许隐藏接口 `setActivityController`
+和 `SET_ACTIVITY_WATCHER`；官方 Shizuku API / Provider 版本为 `13.1.5`。
+目标启动使用 `--user current`，没有原请求用户身份。
 
 只处理 `com.android.browser` 的 `ACTION_VIEW`，且网址必须位于 `Intent.data`。
 直接合法 HTTP/HTTPS 网址优先原样转交，支持裸中文域名；否则尝试包装参数 `url`、`u`、`uri`、
@@ -44,8 +61,9 @@ Stellar 的 Shizuku 兼容层不等于只使用 Stellar AIDL 的旧客户端也�
 最多递归深度 4，每层输入不超过 16,384 字符；不扫描任意 extras 或网页正文。
 
 其他包、非 VIEW、空 data、无法解析的地址和观察模式均放行。不修改系统默认浏览器，不处理
-应用内 WebView。Controller 是全局接口，可能被其他工具覆盖且无法可靠查询所有权；不要同时
-运行 `am monitor`、Monkey 或其他 Activity Controller 工具。
+应用内 WebView。Controller 是全局接口，可能被其他工具覆盖且无法可靠查询所有权。
+
+</details>
 
 ## 为什么找不到浏览器或仍打开旧目标
 
