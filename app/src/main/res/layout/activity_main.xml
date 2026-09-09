@@ -186,7 +186,7 @@
                 android:layout_marginTop="14dp"
                 android:background="@drawable/button_primary"
                 android:text="@string/enable"
-                android:textColor="@android:color/white" />
+                android:textColor="@color/on_accent" />
 
             <Button
                 android:id="@+id/disable_button"
@@ -238,6 +238,28 @@
                 android:textColor="@color/ink"
                 android:textIsSelectable="true"
                 android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/diagnostics_toggle"
+                style="@style/AppButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/button_tertiary"
+                android:text="@string/diagnostics_expand"
+                android:textColor="@color/ink" />
+
+            <TextView
+                android:id="@+id/diagnostics_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:lineSpacingExtra="3dp"
+                android:textColor="@color/muted"
+                android:textIsSelectable="true"
+                android:textSize="13sp"
+                android:visibility="gone" />
 
             <View
                 android:layout_width="match_parent"

@@ -5,6 +5,7 @@
     <color name="ink">#172027</color>
     <color name="muted">#586870</color>
     <color name="accent">#086F7E</color>
+    <color name="on_accent">#FFFFFF</color>
     <color name="accent_dark">#055561</color>
     <color name="accent_pressed">#055866</color>
     <color name="accent_soft">#E5F5F7</color>

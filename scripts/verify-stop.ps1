@@ -137,21 +137,53 @@ function Tap-Node {
 
 function Tap-Text {
     param([string]$Text, [switch]$MayEnableService)
-    [xml]$document = Get-WindowXml
-    $node = $document.SelectSingleNode("//node[@package='$packageName' and @text='$Text' and @clickable='true' and @enabled='true']")
+    $node = Find-AppNode -XPath "//node[@package='$packageName' and @text='$Text' and @clickable='true' and @enabled='true']" -FirstDirection Up
     if ($null -eq $node) { Throw-VerificationError "App button '$Text' is not available." }
     Tap-Node -Node $node -MayEnableService:$MayEnableService
+}
+
+function Scroll-AppPage {
+    param([xml]$Document, [ValidateSet('Up', 'Down')][string]$Direction)
+    # Derive a gesture entirely inside this App's current visible scroll viewport.
+    # Never fall back to another app, an overlay or hard-coded screen coordinates.
+    $page = $Document.SelectSingleNode("//node[@package='$packageName' and @resource-id='$packageName`:id/page_scroll' and @scrollable='true']")
+    if ($null -eq $page -or [string]$page.bounds -notmatch '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$') { return $false }
+    $left = [int]$Matches[1]; $top = [int]$Matches[2]
+    $width = [int]$Matches[3] - $left; $height = [int]$Matches[4] - $top
+    if ($width -lt 2 -or $height -lt 4) { return $false }
+    $x = $left + [int]($width / 2)
+    $high = $top + [int]($height * 0.2); $low = $top + [int]($height * 0.8)
+    $from = if ($Direction -eq 'Down') { $low } else { $high }
+    $to = if ($Direction -eq 'Down') { $high } else { $low }
+    [void](Invoke-Adb @('shell', 'input', 'swipe', "$x", "$from", "$x", "$to", '250'))
+    Start-Sleep -Milliseconds 150
+    return $true
+}
+
+function Find-AppNode {
+    param([string]$XPath, [ValidateSet('Up', 'Down')][string]$FirstDirection = 'Down')
+    $phaseDeadline = [Math]::Min($phaseDeadline, (Get-MonotonicMilliseconds) + 10000)
+    # Search four viewports in one direction, then sweep back through eight.
+    # Every retry uses fresh bounds; a missing control is a bounded failure.
+    for ($attempt = 0; $attempt -le 12; $attempt++) {
+        [xml]$document = Get-WindowXml
+        $node = $document.SelectSingleNode($XPath)
+        if ($null -ne $node) { return $node }
+        if ($attempt -eq 12) { break }
+        $direction = if ($attempt -lt 4) { $FirstDirection } elseif ($FirstDirection -eq 'Down') { 'Up' } else { 'Down' }
+        if (-not (Scroll-AppPage -Document $document -Direction $direction)) { break }
+    }
+    return $null
 }
 
 function Select-Backend {
     param([string]$Choice)
     $targetText = switch ($Choice) {
         'Shizuku' { 'Shizuku 服务' }
-        'Stellar' { '兼容服务（原生 API）' }
+        'Stellar' { 'Stellar（原生 API）' }
         default { '自动（推荐）' }
     }
-    [xml]$document = Get-WindowXml
-    $spinner = $document.SelectSingleNode("//node[@package='$packageName' and @resource-id='$packageName`:id/backend_spinner']")
+    $spinner = Find-AppNode -XPath "//node[@package='$packageName' and @resource-id='$packageName`:id/backend_spinner']" -FirstDirection Up
     if ($null -eq $spinner) { Throw-VerificationError 'Backend spinner was not found.' }
     if ([string]$spinner.text -eq $targetText -or $null -ne $spinner.SelectSingleNode(".//node[@text='$targetText']")) { return }
     Tap-Node -Node $spinner
@@ -164,17 +196,32 @@ function Select-Backend {
 }
 
 function Wait-ForUiText {
-    param([string]$Pattern, [int]$TimeoutSeconds)
+    param([string]$Pattern, [int]$TimeoutSeconds, [ValidateSet('Up', 'Down')][string]$FirstDirection = 'Down')
     # Scope this tighter deadline to this wait, including both ADB calls per dump.
     $phaseDeadline = [Math]::Min($phaseDeadline, (Get-MonotonicMilliseconds) + $TimeoutSeconds * 1000)
+    $scrolls = 0
     do {
         [xml]$document = Get-WindowXml
         # Only App text can satisfy an assertion; not another app's overlay.
         $texts = @($document.SelectNodes("//node[@package='$packageName']") | ForEach-Object { [string]$_.text }) -join "`n"
         if ($texts -match $Pattern) { return }
+        if ($scrolls -lt 12) {
+            $direction = if ($scrolls -lt 4) { $FirstDirection } elseif ($FirstDirection -eq 'Down') { 'Up' } else { 'Down' }
+            if (Scroll-AppPage -Document $document -Direction $direction) { $scrolls++; continue }
+            $scrolls = 12
+        }
         Start-Sleep -Milliseconds 500
     } while ((Get-MonotonicMilliseconds) -lt $phaseDeadline)
     Throw-VerificationError 'Timed out waiting for the expected App state.'
+}
+
+function Expand-Diagnostics {
+    $toggle = Find-AppNode -XPath "//node[@package='$packageName' and @resource-id='$packageName`:id/diagnostics_toggle' and @clickable='true' and @enabled='true']"
+    if ($null -eq $toggle) { Throw-VerificationError 'App diagnostics toggle is not available.' }
+    if ([string]$toggle.text -eq '收起诊断信息 ▾') { return }
+    if ([string]$toggle.text -ne '诊断信息 ▸') { Throw-VerificationError 'App diagnostics toggle has an unexpected state.' }
+    Tap-Node -Node $toggle
+    Wait-ForUiText -Pattern '(?m)^收起诊断信息 ▾$' -TimeoutSeconds 2
 }
 
 function Get-ProcessPid {
@@ -192,8 +239,9 @@ function Assert-NoUserService {
 
 function Confirm-AppStop {
     Tap-Text -Text '停用并退出服务'
-    Wait-ForUiText -Pattern ([regex]::Escape("停止完成 [$($metadata.BuildLabel)]")) -TimeoutSeconds 15
-    Wait-ForUiText -Pattern '已确认 UserService Binder 死亡' -TimeoutSeconds 2
+    Wait-ForUiText -Pattern '停止完成：服务已退出，不会自动重连' -TimeoutSeconds 15
+    Expand-Diagnostics
+    Wait-ForUiText -Pattern '已确认 UserService Binder 死亡' -TimeoutSeconds 8
     Assert-NoUserService
 }
 
@@ -242,9 +290,10 @@ try {
         }
     }
     $stage = 'checking service identity'
+    Expand-Diagnostics
     Wait-ForUiText -Pattern ([regex]::Escape("服务版本：$($metadata.BuildLabel)（协议 $($metadata.ProtocolVersion)）")) -TimeoutSeconds 12
-    Wait-ForUiText -Pattern ([regex]::Escape("服务代：$($metadata.ServiceGeneration)")) -TimeoutSeconds 2
-    Wait-ForUiText -Pattern '控制器：运行中' -TimeoutSeconds 2
+    Wait-ForUiText -Pattern ([regex]::Escape("服务代：$($metadata.ServiceGeneration)")) -TimeoutSeconds 8
+    Wait-ForUiText -Pattern '控制器：运行中' -TimeoutSeconds 8
     $stage = 'checking backend mutual exclusion'
     $stellarPidBefore = Get-ProcessPid $stellarProcess
     $shizukuPidBefore = Get-ProcessPid $shizukuProcess
@@ -258,7 +307,7 @@ try {
     $stage = 'returning to the page (not Activity recreation or process cold start)'
     [void](Invoke-Adb @('shell', 'am', 'start', '-W', '-n', "$packageName/.MainActivity"))
     Start-Sleep -Seconds 2
-    Wait-ForUiText -Pattern '控制器.*：已停止|已确认 UserService Binder 死亡' -TimeoutSeconds 8
+    Wait-ForUiText -Pattern '状态：已停止|停止完成：服务已退出，不会自动重连' -TimeoutSeconds 8
     Assert-NoUserService
     $testPassed = $true
 } catch {
@@ -273,7 +322,7 @@ try {
             if ((Get-MonotonicMilliseconds) -ge $phaseDeadline) { break }
             try {
                 [void](Invoke-Adb @('shell', 'am', 'start', '-W', '-n', "$packageName/.MainActivity"))
-                Wait-ForUiText -Pattern '停用并退出服务' -TimeoutSeconds 5
+                Wait-ForUiText -Pattern '停用并退出服务' -TimeoutSeconds 5 -FirstDirection Up
                 Confirm-AppStop
                 $recovery = 'CONFIRMED (App reports Binder death; both UserService processes absent)'
                 break

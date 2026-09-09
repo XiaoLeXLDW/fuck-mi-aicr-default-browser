@@ -20,7 +20,7 @@ import dev.codex.mibrowserredirector.ServiceIdentity;
  */
 public final class PrivilegeRuntime implements AutoCloseable {
     public enum BackendId {
-        STELLAR("stellar", "兼容服务（原生 API）"),
+        STELLAR("stellar", "Stellar（原生 API）"),
         SHIZUKU("shizuku", "Shizuku 服务");
 
         private final String storageValue;
@@ -51,7 +51,7 @@ public final class PrivilegeRuntime implements AutoCloseable {
     public enum Preference {
         AUTO("auto", "自动（推荐）", null),
         SHIZUKU("shizuku", "Shizuku 服务", BackendId.SHIZUKU),
-        STELLAR("stellar", "兼容服务（原生 API）", BackendId.STELLAR);
+        STELLAR("stellar", "Stellar（原生 API）", BackendId.STELLAR);
 
         private final String storageValue;
         private final String displayName;

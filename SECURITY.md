@@ -12,7 +12,7 @@
 
 应用依赖由用户授权的 Shizuku / Stellar 特权服务，UserService 可能运行在 shell 或 root 身份。
 控制器能够接收系统 Activity 事件，当前实现仅尝试处理 `com.android.browser` 的网页启动。
-全局控制器冲突、目标浏览器启动失败和 ROM 限制详见 [README](README.md)。
+全局控制器冲突、目标浏览器启动失败和 ROM 限制详见 [FAQ](docs/FAQ.md)。
 
 应用没有遥测或上传功能；UserService 以 shell/root 身份运行，不受普通 App 网络权限的限制。
 数据处理和系统日志边界见[隐私说明](docs/PRIVACY.md)。

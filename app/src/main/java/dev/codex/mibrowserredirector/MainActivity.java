@@ -5,12 +5,15 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
@@ -62,6 +65,7 @@ public final class MainActivity extends Activity {
     private Spinner backendSpinner;
     private BrowserPicker browserPicker;
     private TextView statusText;
+    private TextView diagnosticsText;
     private TextView eventText;
     private Button enableButton;
     private Button disableButton;
@@ -236,6 +240,16 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // Android 8.0 has the navigation icon flag; its theme attribute arrived in 8.1.
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.O) {
+            View decor = getWindow().getDecorView();
+            int flags = decor.getSystemUiVisibility();
+            boolean night = (getResources().getConfiguration().uiMode
+                    & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+            decor.setSystemUiVisibility(night
+                    ? flags & ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                    : flags | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        }
         PageInsets.install(findViewById(R.id.page_scroll),
                 getResources().getDimensionPixelSize(R.dimen.page_top_safe_margin));
 
@@ -246,6 +260,13 @@ public final class MainActivity extends Activity {
 
         backendSpinner = findViewById(R.id.backend_spinner);
         statusText = findViewById(R.id.status_text);
+        diagnosticsText = findViewById(R.id.diagnostics_text);
+        Button diagnosticsToggle = findViewById(R.id.diagnostics_toggle);
+        diagnosticsToggle.setOnClickListener(view -> {
+            boolean expand = diagnosticsText.getVisibility() != android.view.View.VISIBLE;
+            diagnosticsText.setVisibility(expand ? android.view.View.VISIBLE : android.view.View.GONE);
+            diagnosticsToggle.setText(expand ? R.string.diagnostics_collapse : R.string.diagnostics_expand);
+        });
         eventText = findViewById(R.id.event_text);
         enableButton = findViewById(R.id.enable_button);
         disableButton = findViewById(R.id.disable_button);
@@ -414,7 +435,7 @@ public final class MainActivity extends Activity {
                 : serviceSession.backendId();
         lifecycleState = LifecycleState.STOPPING;
         setButtonsEnabled(false);
-        showStatus("停止第 1/3 步：正在连接原后端的服务身份…");
+        showStatus("正在停止服务…", "停止第 1/3 步：正在连接原后端的服务身份…");
         armWholeStopDeadline();
         runPendingAction();
     }
@@ -736,7 +757,7 @@ public final class MainActivity extends Activity {
         pendingEnablePackage = null;
         lifecycleState = LifecycleState.STARTING;
         setButtonsEnabled(false);
-        showStatus("正在启用 " + ServiceIdentity.BUILD_LABEL + " 控制器…");
+        showStatus("正在开启…", "正在启用 " + ServiceIdentity.BUILD_LABEL + " 控制器…");
         watchRpc(epoch, enableToken, service, binder, session, false, "启用调用超时（8 秒）");
         submitIo(() -> {
             if (rpcToken != enableToken) return;
@@ -755,7 +776,7 @@ public final class MainActivity extends Activity {
                         return;
                     }
                     lifecycleState = LifecycleState.RUNNING;
-                    showStatus(result);
+                    showStatus(observeOnly ? "观察模式已开启" : "接管模式已开启", result);
                     setButtonsEnabled(true);
                     refreshRemoteState();
                 });
@@ -831,7 +852,7 @@ public final class MainActivity extends Activity {
         connectionToken++;
         lifecycleState = LifecycleState.STOPPING;
         setButtonsEnabled(false);
-        showStatus("停止第 2/3 步：正在请求停止服务并确认退出…");
+        showStatus("正在停止服务，等待确认退出…", "停止第 2/3 步：正在请求停止服务并确认退出…");
         stopSpecificService(service, binder, stopSession, result -> {
             stopWorkerRunning = false;
             if (!ownsOperation(epoch)) {
@@ -854,8 +875,8 @@ public final class MainActivity extends Activity {
             setButtonsEnabled(true);
             String message = "停止完成 [" + ServiceIdentity.BUILD_LABEL + "]\n"
                     + "第 3/3 步：已确认 UserService Binder 死亡，不会自动重连";
-            showStatus(message);
-            if (!activityDestroyed) eventText.setText(message);
+            showStatus("停止完成：服务已退出，不会自动重连", message);
+            if (!activityDestroyed) eventText.setText("已停用接管");
             endGlobalStop(epoch);
         });
     }
@@ -1121,8 +1142,10 @@ public final class MainActivity extends Activity {
                             || activityDestroyed || !ownsOperation(epoch) || rpcToken != readToken) return;
                     stateReadPending = false;
                     rpcToken++;
-                    statusText.setText("权限后端：" + session.backendId().displayName()
-                            + "（服务 API " + backend.serverVersion() + "）\n" + state);
+                    showStatus("权限服务：" + session.backendId().displayName()
+                                    + "\n" + summarizeServiceState(state),
+                            "权限服务：" + session.backendId().displayName()
+                                    + "（服务 API " + backend.serverVersion() + "）\n" + state);
                     eventText.setText(event);
                 });
             } catch (RemoteException | RuntimeException e) {
@@ -1141,7 +1164,8 @@ public final class MainActivity extends Activity {
     }
 
     private void showStoppedState(BackendSnapshot backend) {
-        showStatus("权限后端：" + backend.id().displayName()
+        showStatus("权限服务：" + backend.id().displayName() + "\n授权：已允许\n状态：已停止",
+                "权限服务：" + backend.id().displayName()
                 + "（服务 API " + backend.serverVersion() + "）\n"
                 + "授权：已允许\n"
                 + "控制器 " + ServiceIdentity.BUILD_LABEL + "：已停止\n"
@@ -1330,14 +1354,35 @@ public final class MainActivity extends Activity {
     }
 
     private void showStatus(String message) {
+        showStatus(message, message);
+    }
+
+    private void showStatus(String message, String diagnostics) {
         if (activityDestroyed) return;
         if (Looper.myLooper() == Looper.getMainLooper()) {
             statusText.setText(message);
+            if (diagnosticsText != null) diagnosticsText.setText(diagnostics);
         } else {
             mainHandler.post(() -> {
-                if (!activityDestroyed) statusText.setText(message);
+                if (!activityDestroyed) {
+                    statusText.setText(message);
+                    if (diagnosticsText != null) diagnosticsText.setText(diagnostics);
+                }
             });
         }
+    }
+
+    // Only known metadata is folded; unknown lines and failure messages stay visible.
+    static String summarizeServiceState(String state) {
+        if (state == null || state.isEmpty()) return "状态未知，请刷新或停用服务";
+        StringBuilder summary = new StringBuilder();
+        for (String line : state.split("\n")) {
+            if (line.startsWith("服务版本：") || line.startsWith("服务代：")
+                    || line.startsWith("系统接口：") || line.startsWith("UserService UID/PID：")) continue;
+            if (summary.length() > 0) summary.append('\n');
+            summary.append(line);
+        }
+        return summary.length() == 0 ? "状态未知，请展开诊断信息" : summary.toString();
     }
 
     private void setButtonsEnabled(boolean enabled) {
