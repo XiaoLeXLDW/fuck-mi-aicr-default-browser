@@ -279,7 +279,7 @@ try {
     Start-Sleep -Milliseconds 500
     $initialUi = Get-WindowXml
     if ($initialUi -match '授权：尚未允许') { Throw-VerificationError 'Grant the selected backend permission in the App, then retry.' }
-    if ($initialUi -match '未运行|没有可用的权限后端') { Throw-VerificationError 'The selected privilege backend is not running.' }
+    if ($initialUi -match '未运行|没有可用的权限(?:服务|后端)') { Throw-VerificationError 'The selected privilege backend is not running.' }
 
     $stage = 'enabling the service'
     Tap-Text -Text '开启接管' -MayEnableService

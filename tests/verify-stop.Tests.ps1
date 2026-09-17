@@ -94,7 +94,7 @@ function New-Fixture([string]$Scenario = 'BothAlive', [string]$Choice = 'Auto') 
             } elseif ($state.Scenario -eq 'PermissionDenied' -and $state.EnableTaps -eq 0) {
                 '授权：尚未允许'
             } elseif ($state.Scenario -eq 'BackendDown' -and $state.EnableTaps -eq 0) {
-                '权限后端：未运行'
+                '没有可用的权限服务'
             } else {
                 if ($state.StopReported) { '停止完成：服务已退出，不会自动重连' } else { '状态：已停止' }
             }

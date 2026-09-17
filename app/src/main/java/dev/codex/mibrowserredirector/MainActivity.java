@@ -1179,7 +1179,7 @@ public final class MainActivity extends Activity {
 
     private String noBackendStatus() {
         // Manager probing happens only in the bounded background lane.
-        return "没有可用的权限后端\n请先启动 Shizuku 或兼容服务，再点刷新状态";
+        return "没有可用的权限服务\n请先启动 Shizuku 或 Stellar，再点“刷新状态”";
     }
 
     private void finishUnavailableOperation() {
@@ -1204,8 +1204,8 @@ public final class MainActivity extends Activity {
         }
         clearPendingActions();
         lifecycleState = LifecycleState.ERROR;
-        showStatus("检测到原生兼容服务正在运行，Shizuku Binder 来源无法唯一确认。\n"
-                + "为避免把停止请求发给错误的管理器，请先停止兼容服务，再使用 Shizuku 服务。"
+        showStatus("检测到 Stellar 原生服务正在运行，无法唯一确认 Shizuku Binder 的来源。\n"
+                + "请先在本应用中停用当前会话，再停止 Stellar，然后使用官方 Shizuku。"
                 + (existingOwner ? "\n已保留原 Shizuku 服务归属记录。" : ""));
     }
 

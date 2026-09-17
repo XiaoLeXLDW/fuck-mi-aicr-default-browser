@@ -103,9 +103,10 @@ $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
 .\tests\current-docs.Tests.ps1
 ```
 
-Linux / macOS 将 Gradle 命令前缀换为 `bash ./gradlew`，设置本地 `GRADLE_USER_HOME`；
-PowerShell 回归使用 PowerShell 7。后四类检查分别覆盖 UI、ADB 辅助脚本和当前文档约束，
-不会连接手机。`verify-repository.ps1` 还检查 Wrapper、许可证副本与版本字段。
+Linux / macOS 可通过 `bash ./gradlew` 运行 Java 测试、Lint 和构建，并设置本地
+`GRADLE_USER_HOME`。`verify-stop-process.Tests.ps1` 依赖 Windows PowerShell 的
+`powershell.exe`，只在 Windows 运行；其他 PowerShell 检查按各脚本的平台要求执行。
+这些离线检查不会连接手机。`verify-repository.ps1` 还检查 Wrapper、许可证副本与版本字段。
 
 `testStellarLifecycle` 直接编译原生会话生产源码，使用仅位于测试目录内的 Android/管理器替身，
 替身不进入 APK；其报告在 `app/build/test-results/testStellarLifecycle/`。
