@@ -1,7 +1,7 @@
 # 常见问题
 
 基本使用步骤见[README](../README.md)。本页面向 v0.3.5 正式版。
-已在小米 17 Ultra、系统 `3.0.309.0.WPACNXM.C11`、Stellar 环境下测试成功。
+已记录的设备与系统环境见[实测记录](../README.md#实测记录)，包括小米 17 Ultra 徕卡版 / OS `4.0.4.0` / Android 17。
 
 ## 权限服务怎么启动和授权
 
@@ -40,6 +40,7 @@ Stellar 的 Shizuku 兼容层不等于只使用 Stellar AIDL 的旧客户端也�
 | 范围 | 当前边界 |
 | --- | --- |
 | Android / ROM | Android 8.0 及以上；能安装不等于系统允许接管 |
+| 新增实测 | 小米 17 Ultra 徕卡版、OS `4.0.4.0`、Android 17 测试通过，目前可用；本次未记录权限后端 |
 | 官方 Shizuku | 已实现独立授权与 UserService；本版独立真机测试结果尚未记录 |
 | Stellar | 小米 17 Ultra、系统 `3.0.309.0.WPACNXM.C11` 实机测试成功 |
 | Sui / 其他 ROM | 未测试，不作兼容承诺 |

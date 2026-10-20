@@ -12,11 +12,20 @@
 [自动构建](https://github.com/XiaoLeXLDW/fuck-mi-aicr-default-browser/actions/workflows/android.yml)
 
 **当前版本：v0.3.5 正式版。** 面向 Xiaomi / HyperOS 的 Android 工具。
-已在小米 17 Ultra、系统 `3.0.309.0.WPACNXM.C11`、Stellar 环境下测试成功。
+已在小米 17 Ultra 及徕卡版上收到实机测试成功反馈，具体环境见[实测记录](#实测记录)。
 最低安装版本为 Android 8.0（minSdk 26），不代表所有机型和 ROM 都能接管。
 
 应用通过 **Shizuku 或 Stellar** 提供的特权服务观察网页启动请求，支持 ADB 启动权限服务，
 无需 Root；本项目与 Xiaomi、Shizuku、Stellar 均无官方隶属关系。
+
+## 实测记录
+
+| 设备 | 系统版本 | Android | 权限后端 | 结果 |
+| --- | --- | --- | --- | --- |
+| 小米 17 Ultra 徕卡版 | OS `4.0.4.0` | 17 | 本次未记录 | 测试通过，目前确实可用（2026-10-20 维护者反馈） |
+| 小米 17 Ultra | `3.0.309.0.WPACNXM.C11` | 未记录 | Stellar | 实机测试成功 |
+
+实测记录对应上述设备与系统环境；未单独记录的权限后端、重启恢复及其他专项场景不视为已验证。
 
 ## 开始使用
 
