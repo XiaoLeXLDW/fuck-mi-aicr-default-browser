@@ -111,6 +111,8 @@ Linux / macOS 可通过 `bash ./gradlew` 运行 Java 测试、Lint 和构建，�
 `testStellarLifecycle` 直接编译原生会话生产源码，使用仅位于测试目录内的 Android/管理器替身，
 替身不进入 APK；其报告在 `app/build/test-results/testStellarLifecycle/`。
 标准单测报告在 `app/build/reports/tests/`，Lint 在 `app/build/reports/lint-results-*.html`。
+标准单测直接覆盖 `NativeStellar` 管理器重连、未验证协议时的停服隔离，以及并发停服期间的状态读取；
+隐藏接口桩仅加入测试运行时，不打入正式 APK。
 这些检查覆盖解析、浏览器资格/选择、会话归属、调度、停止和子进程清理，但不能证明 ROM 的隐藏
 API、管理器授权界面、真实超级岛链接、视觉效果或停止后的系统行为。
 
@@ -202,8 +204,9 @@ Shizuku SDK 按整个 tag 解绑；`ShizukuTagOwnership` 跟踪本地归属，�
 
 应用先持久保存停用意图，再调用 `disable()` 注销 Controller，然后通过原后端移除 UserService。Shizuku 使用原 `UserServiceArgs`，Stellar 使用原生 token；必要时通过已持有的业务 Binder 发送 destroy。
 
-以上业务调用只用于未被拒绝的会话。token 验证失败、协议不兼容或协议读取超时会撤销业务调用
-资格，只通过来源管理器移除；原始 Binder 保留用于死亡观测。原生记录的拒绝状态跨页面租约
+以上业务调用只用于已经通过协议及服务代验证、且未被拒绝的同一会话与 Binder。尚未完成验证、
+token 验证失败、协议不兼容或协议读取超时的连接只通过来源管理器移除；原始 Binder 保留用于
+死亡观测，停用不会等候协议读取返回。原生记录的拒绝状态跨页面租约
 保留，不会因为换页面重新变成可信。Shizuku 会话固定保存来源管理器 Binder；来源变化时拒绝向替换后的管理器执行 remove。原生停止 RPC 失败或 token 晚到时保留记录供受监督清理/重试。AIDL destroy 方法编号为 `16777114`，实际 Binder 事务码为 `16777115`。
 
 只有 Binder 死亡才算完成。停止超时保留后端归属；页面操作代和会话身份检查用于阻止旧回调覆盖

@@ -86,6 +86,7 @@ dependencies {
     compileOnly "androidx.annotation:annotation:1.3.0"
 
     testImplementation "junit:junit:4.13.2"
+    testRuntimeOnly project(":hidden-api-stub")
 }
 
 // Compile the real native session implementation against test-only Android/manager transports.

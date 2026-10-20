@@ -75,6 +75,18 @@ public final class MainActivity extends Activity {
 
     private volatile IRedirectorService remoteService;
     private volatile IBinder remoteBinder;
+    private volatile VerifiedConnection verifiedConnection;
+
+    private static final class VerifiedConnection {
+        final ServiceSession session;
+        final IBinder binder;
+
+        VerifiedConnection(ServiceSession session, IBinder binder) {
+            this.session = session;
+            this.binder = binder;
+        }
+    }
+
     private ServiceSession serviceSession;
     private BackendId operationBackend;
     private LifecycleState lifecycleState = LifecycleState.STOPPED;
@@ -146,6 +158,7 @@ public final class MainActivity extends Activity {
                     operationBackend = session.backendId();
                     // Preserve the raw Binder before protocol RPCs, so a stalled verification
                     // never prevents the independent stop lane from reaching this process.
+                    verifiedConnection = null;
                     remoteBinder = binder;
                     remoteService = IRedirectorService.Stub.asInterface(binder);
                     if (pendingStop || !preferences.getBoolean(PREF_DESIRED_ENABLED, false)) {
@@ -171,6 +184,7 @@ public final class MainActivity extends Activity {
                         return;
                     }
                     detachSession(session);
+                    verifiedConnection = null;
                     remoteService = null;
                     remoteBinder = null;
                     serviceSession = null;
@@ -202,6 +216,7 @@ public final class MainActivity extends Activity {
                     stateReadPending = false;
                     rpcToken++;
                     detachSession(session);
+                    verifiedConnection = null;
                     connectionPending = false;
                     connectionToken++;
                     serviceSession = null;
@@ -227,6 +242,7 @@ public final class MainActivity extends Activity {
                             .putString(PREF_ACTIVE_BACKEND, session.backendId().storageValue()).apply();
                     clearPendingActions();
                     operationBackend = session.backendId();
+                    verifiedConnection = null;
                     remoteBinder = binder;
                     remoteService = null; // An identity-rejected Binder is not a business endpoint.
                     pendingStop = true;
@@ -322,6 +338,7 @@ public final class MainActivity extends Activity {
             ServiceSession session = serviceSession;
             if (session != null) detachSession(session);
             serviceSession = null;
+            verifiedConnection = null;
             remoteService = null;
             remoteBinder = null;
         }
@@ -692,6 +709,7 @@ public final class MainActivity extends Activity {
         boolean matches = failure == null && protocol == ServiceIdentity.PROTOCOL_VERSION
                 && serviceGeneration == ServiceIdentity.USER_SERVICE_GENERATION;
         if (!matches) {
+            verifiedConnection = null;
             session.rejectServiceCommands(binder);
             if (!beginGlobalStop(epoch)) {
                 finishOperationFailure("服务清理正在进行，请稍后重试");
@@ -728,6 +746,7 @@ public final class MainActivity extends Activity {
         }
 
         identityRetryAttempted = false;
+        verifiedConnection = new VerifiedConnection(session, binder);
         remoteService = candidate;
         remoteBinder = binder;
         operationBackend = session.backendId();
@@ -821,6 +840,7 @@ public final class MainActivity extends Activity {
                 endGlobalStop(epoch);
                 return;
             }
+            verifiedConnection = null;
             if (serviceSession == session) serviceSession = null;
             detachSession(session);
             operationBackend = null;
@@ -865,6 +885,7 @@ public final class MainActivity extends Activity {
                 endGlobalStop(epoch);
                 return;
             }
+            verifiedConnection = null;
             if (serviceSession == stopSession) serviceSession = null;
             if (stopSession != null) detachSession(stopSession);
             pendingStop = false;
@@ -902,27 +923,31 @@ public final class MainActivity extends Activity {
 
     private UserServiceStopper.Result performStop(IRedirectorService service, IBinder binder,
             ServiceSession stopSession, long budgetMillis) {
+        // Transport ownership alone does not make business transaction IDs safe. Capture the
+        // exact verified connection, so stopping can bypass a stalled protocol read safely.
+        VerifiedConnection verified = verifiedConnection;
+        boolean businessVerified = verified != null && stopSession != null && verified.session == stopSession
+                && binder != null && verified.binder == binder;
         try {
             return UserServiceStopper.stop(
                     new UserServiceStopper.Endpoint() {
                         @Override
                         public String disable() throws Exception {
-                            if (stopSession != null && !stopSession.allowsServiceCommands(binder)) {
-                                return "身份未通过：仅向来源管理器请求停止";
+                            if (!businessVerified || !stopSession.allowsServiceCommands(binder)) {
+                                return "业务协议尚未验证或已拒绝：仅向来源管理器请求停止";
                             }
                             IRedirectorService endpoint = service;
-                            if (endpoint == null && stopSession != null) {
-                                endpoint = IRedirectorService.Stub.asInterface(stopSession.cleanupBinder());
+                            if (endpoint == null) {
+                                endpoint = IRedirectorService.Stub.asInterface(binder);
                             }
                             return endpoint == null ? "尚无可信业务 Binder" : endpoint.disable();
                         }
 
                         @Override
                         public void destroy() throws Exception {
-                            if (stopSession == null ? service != null : stopSession.allowsServiceCommands(binder)) {
-                                IBinder target = stopSession == null ? null : stopSession.cleanupBinder();
-                                if (target == null) target = binder;
-                                if (target != null) UserServiceBinderHelper.destroy(target);
+                            if (businessVerified && stopSession.allowsServiceCommands(binder)) {
+                                // cleanupBinder() may describe a different late-arriving identity.
+                                UserServiceBinderHelper.destroy(binder);
                             }
                         }
 
@@ -1347,7 +1372,10 @@ public final class MainActivity extends Activity {
         if (!ownsOperation(epoch) || activityDestroyed || rpcToken != token
                 || service != remoteService || session != serviceSession) return;
         // A valid transport token does not establish that business transaction IDs are safe.
-        if (verifyingIdentity) session.rejectServiceCommands(binder);
+        if (verifyingIdentity) {
+            verifiedConnection = null;
+            session.rejectServiceCommands(binder);
+        }
         rpcToken++;
         pendingEnablePackage = null;
         cleanupFailedEnable(epoch, service, binder, session, failure);

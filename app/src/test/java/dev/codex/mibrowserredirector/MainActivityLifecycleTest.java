@@ -98,6 +98,102 @@ public class MainActivityLifecycleTest {
         assertSame("disconnect discarded cleanup owner before confirmation", session, get(activity, "serviceSession"));
     }
 
+    @Test public void stopBeforeProtocolVerificationUsesOnlySourceManager() throws Exception {
+        assertStopProtocolGate(false);
+    }
+
+    @Test public void verifiedConnectionStillDisablesBeforeSourceManagerRemoval() throws Exception {
+        assertStopProtocolGate(true);
+    }
+
+    @Test public void unverifiedBinderMustNotBeDestroyedWhenManagerCannotRemoveIt() throws Exception {
+        MainActivity activity = activity();
+        java.util.concurrent.atomic.AtomicInteger businessCalls = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.concurrent.atomic.AtomicInteger removals = new java.util.concurrent.atomic.AtomicInteger();
+        IRedirectorService candidate = (IRedirectorService) Proxy.newProxyInstance(
+                IRedirectorService.class.getClassLoader(), new Class<?>[]{IRedirectorService.class},
+                (proxy, method, args) -> { businessCalls.incrementAndGet(); return "未验证的服务"; });
+        android.os.IBinder binder = (android.os.IBinder) Proxy.newProxyInstance(
+                android.os.IBinder.class.getClassLoader(), new Class<?>[]{android.os.IBinder.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("queryLocalInterface")) return candidate;
+                    if (method.getName().equals("isBinderAlive") || method.getName().equals("pingBinder")) return true;
+                    businessCalls.incrementAndGet();
+                    return method.getReturnType() == boolean.class ? true : null;
+                });
+        Session session = new Session() {
+            @Override public android.os.IBinder cleanupBinder() { return binder; }
+            @Override public void remove() { removals.incrementAndGet(); }
+        };
+        Method stop = MainActivity.class.getDeclaredMethod("performStop", IRedirectorService.class,
+                android.os.IBinder.class, PrivilegeRuntime.ServiceSession.class, long.class);
+        stop.setAccessible(true);
+        UserServiceStopper.Result result = (UserServiceStopper.Result) stop.invoke(activity, null, binder, session, 200L);
+        assertFalse("a live unverified Binder cannot count as stopped", result.stopped);
+        assertEquals("manager-only cleanup must still be attempted", 1, removals.get());
+        assertEquals("neither disable nor destroy may reach an unverified cleanup Binder", 0, businessCalls.get());
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(1);
+        while (UserServiceStopper.hasPendingCalls() && System.nanoTime() < deadline) Thread.yield();
+        assertFalse("bounded stop worker did not finish", UserServiceStopper.hasPendingCalls());
+    }
+
+    private static void assertStopProtocolGate(boolean verified) throws Exception {
+        MainActivity activity = activity();
+        java.util.concurrent.atomic.AtomicBoolean alive = new java.util.concurrent.atomic.AtomicBoolean(true);
+        java.util.concurrent.atomic.AtomicInteger protocolReads = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.concurrent.atomic.AtomicInteger disableCalls = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.concurrent.atomic.AtomicInteger removals = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.concurrent.CountDownLatch confirmed = new java.util.concurrent.CountDownLatch(1);
+        IRedirectorService candidate = (IRedirectorService) Proxy.newProxyInstance(
+                IRedirectorService.class.getClassLoader(), new Class<?>[]{IRedirectorService.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("disable")) { disableCalls.incrementAndGet(); return "已停用"; }
+                    if (method.getName().equals("getProtocolVersion")
+                            || method.getName().equals("getServiceGeneration")) {
+                        protocolReads.incrementAndGet();
+                        return -999;
+                    }
+                    throw new AssertionError("unexpected business call: " + method.getName());
+                });
+        android.os.IBinder binder = (android.os.IBinder) Proxy.newProxyInstance(
+                android.os.IBinder.class.getClassLoader(), new Class<?>[]{android.os.IBinder.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("queryLocalInterface")) return candidate;
+                    if (method.getName().equals("isBinderAlive") || method.getName().equals("pingBinder")) return alive.get();
+                    throw new AssertionError("unexpected Binder transaction: " + method.getName());
+                });
+        Session session = new Session() {
+            @Override public android.os.IBinder cleanupBinder() { return binder; }
+            @Override public void remove() { removals.incrementAndGet(); alive.set(false); }
+            @Override public void onStopConfirmed() { confirmed.countDown(); }
+        };
+        set(activity, "serviceSession", session);
+        set(activity, "pendingStop", true);
+        invoke(activity, "claimOperation");
+        int epoch = (Integer) get(activity, "operationEpoch");
+        try {
+            if (verified) {
+                Method verify = MainActivity.class.getDeclaredMethod("finishServiceVerification", int.class,
+                        PrivilegeRuntime.ServiceSession.class, IRedirectorService.class, android.os.IBinder.class,
+                        int.class, int.class, String.class);
+                verify.setAccessible(true);
+                verify.invoke(activity, epoch, session, candidate, binder,
+                        ServiceIdentity.PROTOCOL_VERSION, ServiceIdentity.USER_SERVICE_GENERATION, null);
+            } else {
+                PrivilegeRuntime.ServiceCallback callback = (PrivilegeRuntime.ServiceCallback) get(activity, "userServiceCallback");
+                callback.onServiceConnected(session, binder);
+            }
+            assertTrue("source-manager cleanup did not complete", confirmed.await(2, java.util.concurrent.TimeUnit.SECONDS));
+            assertEquals("stopping must not wait for protocol RPCs", 0, protocolReads.get());
+            assertEquals("disable must require successful protocol verification", verified ? 1 : 0, disableCalls.get());
+            assertEquals("source manager must remove its own service", 1, removals.get());
+            assertFalse("stop confirmation requires Binder death", alive.get());
+        } finally {
+            Method end = MainActivity.class.getDeclaredMethod("endGlobalStop", int.class);
+            end.setAccessible(true); end.invoke(activity, epoch);
+        }
+    }
+
     @Test public void failedProtocolVerificationRevokesBusinessCallsBeforeCleanup() throws Exception {
         assertProtocolCleanup(false);
     }

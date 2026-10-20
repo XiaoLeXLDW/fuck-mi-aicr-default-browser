@@ -99,8 +99,12 @@ public final class RedirectorUserService extends IRedirectorService.Stub {
 
     @Override
     public String getState() {
-        String target = targetPackage == null ? "未选择" : targetPackage;
-        String api = systemController == null ? "未连接" : systemController.implementationName();
+        // A stop RPC may clear these references during an already-running read.
+        // Keep local references without waiting for the enable/disable monitor.
+        String selectedTarget = targetPackage;
+        SystemActivityController controller = systemController;
+        String target = selectedTarget == null ? "未选择" : selectedTarget;
+        String api = controller == null ? "未连接" : controller.implementationName();
         return "服务版本：" + ServiceIdentity.BUILD_LABEL
                 + "（协议 " + ServiceIdentity.PROTOCOL_VERSION + "）"
                 + "\n服务代：" + ServiceIdentity.USER_SERVICE_GENERATION

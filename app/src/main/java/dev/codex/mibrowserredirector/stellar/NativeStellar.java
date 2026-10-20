@@ -17,6 +17,8 @@ import com.stellar.server.IStellarApplication;
 import com.stellar.server.IStellarService;
 
 import java.util.List;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class NativeStellar {
@@ -53,126 +55,217 @@ public final class NativeStellar {
     private static final List<PermissionResultListener> PERMISSION_LISTENERS =
             new CopyOnWriteArrayList<>();
 
-    private static volatile IBinder binder;
-    private static volatile IStellarService service;
-    private static volatile String packageName;
-    private static volatile boolean binderReady;
-    private static volatile boolean permissionGranted;
-    private static volatile boolean shouldShowRationale;
-    private static volatile int serverUid = -1;
-    private static volatile int serverVersion = -1;
+    // Stellar retains the first client callback for a UID/PID. Keep that identity for the
+    // manager Binder's lifetime, including retries after a failed attach or local clear.
+    // Only local state is guarded by NativeStellar.class; manager RPCs run outside that lock.
+    private static volatile Connection connection;
+    private static final Map<IBinder, Connection> CONNECTIONS = new IdentityHashMap<>();
+    private static long connectionRevision;
+    private static volatile IStellarApplication clientCallback = new IStellarApplication.Stub() {
+        @Override public void bindApplication(Bundle data) { }
+        @Override public void dispatchRequestPermissionResult(int requestCode, Bundle data) { }
+        @Override public void onServiceStarted() { }
+    };
 
-    private static final IBinder.DeathRecipient DEATH_RECIPIENT = NativeStellar::clearBinder;
-
-    private static final IStellarApplication APPLICATION_CALLBACK =
-            new IStellarApplication.Stub() {
-                @Override
-                public void bindApplication(Bundle data) {
+    private static final class Connection {
+        final IBinder binder;
+        final IStellarService service;
+        final String packageName;
+        final IBinder.DeathRecipient deathRecipient = () -> managerDied(this);
+        final IStellarApplication callback = new IStellarApplication.Stub() {
+            @Override
+            public void bindApplication(Bundle data) {
+                synchronized (NativeStellar.class) {
+                    if (connection != Connection.this) return;
                     serverUid = data.getInt(REPLY_UID, -1);
                     serverVersion = data.getInt(REPLY_VERSION, -1);
                     permissionGranted = data.getBoolean(REPLY_PERMISSION, false);
                     shouldShowRationale = data.getBoolean(REPLY_RATIONALE, false);
-                    binderReady = true;
-                    for (BinderReceivedListener listener : RECEIVED_LISTENERS) {
-                        MAIN_HANDLER.post(listener::onBinderReceived);
-                    }
+                    ready = true;
                 }
+                for (BinderReceivedListener listener : RECEIVED_LISTENERS) {
+                    postIfCurrent(Connection.this, listener::onBinderReceived);
+                }
+            }
 
-                @Override
-                public void dispatchRequestPermissionResult(int requestCode, Bundle data) {
-                    boolean allowed = data.getBoolean(PERMISSION_REPLY_ALLOWED, false);
+            @Override
+            public void dispatchRequestPermissionResult(int requestCode, Bundle data) {
+                boolean allowed = data.getBoolean(PERMISSION_REPLY_ALLOWED, false);
+                synchronized (NativeStellar.class) {
+                    if (connection != Connection.this) return;
                     permissionGranted = allowed;
                     if (allowed) shouldShowRationale = false;
-                    for (PermissionResultListener listener : PERMISSION_LISTENERS) {
-                        MAIN_HANDLER.post(() -> listener.onPermissionResult(requestCode, allowed));
-                    }
                 }
+                for (PermissionResultListener listener : PERMISSION_LISTENERS) {
+                    postIfCurrent(Connection.this,
+                            () -> listener.onPermissionResult(requestCode, allowed));
+                }
+            }
 
-                @Override
-                public void onServiceStarted() {
-                    // No automatic action: desired state is controlled by MainActivity.
-                }
-            };
+            @Override
+            public void onServiceStarted() {
+                // No automatic action: desired state is controlled by MainActivity.
+            }
+        };
+        volatile boolean ready;
+        volatile boolean permissionGranted;
+        volatile boolean shouldShowRationale;
+        volatile int serverUid = -1;
+        volatile int serverVersion = -1;
+        boolean linked;
+        boolean attaching;
+        boolean dead;
+
+        Connection(IBinder binder, String packageName) {
+            this.binder = binder;
+            this.service = IStellarService.Stub.asInterface(binder);
+            this.packageName = packageName;
+        }
+    }
 
     private NativeStellar() {
     }
 
-    public static synchronized void acceptBinder(IBinder newBinder, String clientPackageName) {
+    public static void acceptBinder(IBinder newBinder, String clientPackageName) {
         if (newBinder == null || !newBinder.pingBinder()) return;
-        if (binder == newBinder && binderReady) return;
-
-        IBinder oldBinder = binder;
-        if (oldBinder != null) {
-            try {
-                oldBinder.unlinkToDeath(DEATH_RECIPIENT, 0);
-            } catch (RuntimeException ignored) {
-                // The old server is already dead.
+        pruneDeadConnections();
+        // asInterface may query a local Binder; create the candidate outside the state lock.
+        Connection candidate = new Connection(newBinder, clientPackageName);
+        Connection attached;
+        boolean link;
+        synchronized (NativeStellar.class) {
+            attached = CONNECTIONS.get(newBinder);
+            if (attached == null) {
+                attached = candidate;
+                CONNECTIONS.put(newBinder, attached);
             }
+            if (connection != attached) {
+                connection = attached;
+                connectionRevision++;
+                clientCallback = attached.callback;
+                attached.ready = false;
+                attached.permissionGranted = false;
+                attached.shouldShowRationale = false;
+                attached.serverUid = -1;
+                attached.serverVersion = -1;
+            }
+            if (attached.ready || attached.attaching) return;
+            attached.attaching = true;
+            link = !attached.linked;
         }
-
-        binder = newBinder;
-        service = IStellarService.Stub.asInterface(newBinder);
-        packageName = clientPackageName;
-        binderReady = false;
         try {
-            newBinder.linkToDeath(DEATH_RECIPIENT, 0);
+            if (link) {
+                newBinder.linkToDeath(attached.deathRecipient, 0);
+                synchronized (NativeStellar.class) {
+                    if (attached.dead) return;
+                    attached.linked = true;
+                }
+            }
             Bundle args = new Bundle();
             args.putInt(ATTACH_API_VERSION, CLIENT_API_VERSION);
             args.putString(ATTACH_PACKAGE_NAME, clientPackageName);
-            service.attachApplication(APPLICATION_CALLBACK, args);
+            // An admitted attach can finish after replacement; its source-scoped callback is
+            // harmless while inactive and remains the service's registered client if revisited.
+            attached.service.attachApplication(attached.callback, args);
         } catch (Throwable e) {
-            clearBinder();
+            clearBinder(attached);
+        } finally {
+            synchronized (NativeStellar.class) {
+                attached.attaching = false;
+            }
         }
     }
 
-    public static synchronized void clearBinder() {
-        IBinder oldBinder = binder;
-        binder = null;
-        service = null;
-        packageName = null;
-        binderReady = false;
-        permissionGranted = false;
-        shouldShowRationale = false;
-        serverUid = -1;
-        serverVersion = -1;
-        if (oldBinder != null) {
-            try {
-                oldBinder.unlinkToDeath(DEATH_RECIPIENT, 0);
-            } catch (RuntimeException ignored) {
-                // Binder death already removed the recipient.
+    public static void clearBinder() {
+        clearBinder(connection);
+    }
+
+    private static void clearBinder(Connection expected) {
+        long revision;
+        synchronized (NativeStellar.class) {
+            if (expected == null || connection != expected) return;
+            connection = null;
+            revision = ++connectionRevision;
+        }
+        notifyDead(revision);
+    }
+
+    private static void managerDied(Connection expected) {
+        long revision = 0L;
+        synchronized (NativeStellar.class) {
+            if (CONNECTIONS.get(expected.binder) != expected) return;
+            CONNECTIONS.remove(expected.binder);
+            expected.dead = true;
+            if (connection == expected) {
+                connection = null;
+                revision = ++connectionRevision;
             }
         }
-        for (BinderDeadListener listener : DEAD_LISTENERS) {
-            MAIN_HANDLER.post(listener::onBinderDead);
+        if (revision != 0L) notifyDead(revision);
+    }
+
+    private static void pruneDeadConnections() {
+        Connection[] known;
+        synchronized (NativeStellar.class) {
+            known = CONNECTIONS.values().toArray(new Connection[0]);
         }
+        for (Connection old : known) {
+            // Local death knowledge only; never ping a manager while holding the state lock.
+            if (!old.binder.isBinderAlive()) managerDied(old);
+        }
+    }
+
+    private static void notifyDead(long revision) {
+        for (BinderDeadListener listener : DEAD_LISTENERS) {
+            MAIN_HANDLER.post(() -> {
+                synchronized (NativeStellar.class) {
+                    if (connectionRevision != revision) return;
+                }
+                listener.onBinderDead();
+            });
+        }
+    }
+
+    private static void postIfCurrent(Connection expected, Runnable callback) {
+        MAIN_HANDLER.post(() -> {
+            if (connection == expected) callback.run();
+        });
     }
 
     public static boolean pingBinder() {
-        IBinder current = binder;
-        return binderReady && current != null && current.pingBinder();
+        Connection current = connection;
+        return current != null && current.ready && current.binder.pingBinder()
+                && connection == current;
     }
 
     public static boolean checkSelfPermission() {
-        IStellarService current = service;
+        Connection current = connection;
         if (current == null) return false;
         try {
-            permissionGranted = current.checkSelfPermission(PERMISSION_STELLAR);
-            return permissionGranted;
+            boolean allowed = current.service.checkSelfPermission(PERMISSION_STELLAR);
+            synchronized (NativeStellar.class) {
+                if (connection != current) return false;
+                current.permissionGranted = allowed;
+                return allowed;
+            }
         } catch (RemoteException e) {
             return false;
         }
     }
 
     public static boolean shouldShowRequestPermissionRationale() {
-        if (permissionGranted) return false;
-        IStellarService current = service;
-        if (current == null) return shouldShowRationale;
+        Connection current = connection;
+        if (current == null || current.permissionGranted) return false;
         try {
-            shouldShowRationale = current.shouldShowRequestPermissionRationale();
+            boolean rationale = current.service.shouldShowRequestPermissionRationale();
+            synchronized (NativeStellar.class) {
+                if (connection != current) return false;
+                current.shouldShowRationale = rationale;
+            }
         } catch (RemoteException ignored) {
             // Keep the latest server-provided value.
         }
-        return shouldShowRationale;
+        return connection == current && current.shouldShowRationale;
     }
 
     public static void requestPermission(int requestCode) throws RemoteException {
@@ -180,34 +273,42 @@ public final class NativeStellar {
     }
 
     public static int getServerUid() {
-        return serverUid;
+        Connection current = connection;
+        return current == null ? -1 : current.serverUid;
     }
 
     public static int getServerVersion() {
-        return serverVersion;
+        Connection current = connection;
+        return current == null ? -1 : current.serverVersion;
     }
 
     public static IStellarService requireService() {
-        IStellarService current = service;
+        Connection current = connection;
         if (current == null) throw new IllegalStateException("Stellar service is not connected");
-        return current;
+        return current.service;
     }
 
     public static String getPackageName() {
-        return packageName;
+        Connection current = connection;
+        return current == null ? null : current.packageName;
     }
 
     public static IBinder getBinder() {
-        return binder;
+        Connection current = connection;
+        return current == null ? null : current.binder;
     }
 
     public static IBinder getClientBinder() {
-        return APPLICATION_CALLBACK.asBinder();
+        // This is the exact callback sent to the current manager. Retain a non-null last Binder
+        // after disconnection for callers that previously obtained the process-wide identity.
+        Connection current = connection;
+        return (current == null ? clientCallback : current.callback).asBinder();
     }
 
     public static void addBinderReceivedListenerSticky(BinderReceivedListener listener) {
         RECEIVED_LISTENERS.add(listener);
-        if (pingBinder()) MAIN_HANDLER.post(listener::onBinderReceived);
+        Connection current = connection;
+        if (current != null && pingBinder()) postIfCurrent(current, listener::onBinderReceived);
     }
 
     public static void removeBinderReceivedListener(BinderReceivedListener listener) {
